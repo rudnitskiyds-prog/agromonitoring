@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TODO(ui-designer): подобрать палитру по разделу 8. Значения — заглушки, формат «R G B». */
+:root {
+  --bg: 240 236 226;
+  --surface: 250 248 242;
+  --ink: 30 36 30;
+  --muted: 98 106 96;
+  --line: 214 210 198;
+  --accent: 38 84 52;
+  --ochre: 196 146 52;
+  --status-worse: 190 52 40;
+  --status-normal: 200 150 20;
+  --status-better: 40 140 70;
+  --crop-wheat: 196 146 52;
+  --crop-barley: 140 120 70;
+  --crop-sunflower: 90 70 40;
+  --crop-corn: 70 110 90;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: 18 24 20;
+  --surface: 26 33 28;
+  --ink: 232 230 220;
+  --muted: 160 166 156;
+  --line: 52 60 54;
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+}
