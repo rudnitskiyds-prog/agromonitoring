@@ -37,3 +37,19 @@ export function shiftMonths(isoDate: string, n: number): string {
   const mm = ((m % 12) + 12) % 12;
   return `${yy}-${String(mm + 1).padStart(2, '0')}-01`;
 }
+
+/**
+ * Тот же день n месяцев назад: '2026-10-26' → '2026-09-26'. Если такого дня нет —
+ * последний день месяца: '2026-03-31' → '2026-02-28' (в високосный год — 29-е).
+ * Это база сравнения «за месяц»: periodStateAt(plan, data, monthAgo(date)).
+ */
+export function monthAgo(isoDate: string, n = 1): string {
+  const y = Number(isoDate.slice(0, 4));
+  const m = Number(isoDate.slice(5, 7)) - 1 - n;
+  const d = Number(isoDate.slice(8, 10)) || 1;
+  const yy = y + Math.floor(m / 12);
+  const mm = ((m % 12) + 12) % 12;
+  const leap = (yy % 4 === 0 && yy % 100 !== 0) || yy % 400 === 0;
+  const dim = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mm];
+  return `${yy}-${String(mm + 1).padStart(2, '0')}-${String(Math.min(d, dim)).padStart(2, '0')}`;
+}

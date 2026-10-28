@@ -216,6 +216,11 @@ export const texts = {
       harvest: 'Идёт уборка. Урожайность становится известна.',
       sales: 'Время продавать. Сравните цену с обычной для этого месяца.',
     },
+    offSeason: 'Межсезонье',
+    offSeasonHint: 'Сейчас нет ни сева, ни вегетации, ни уборки. Время планировать и следить за ценой.',
+    salesLayer: 'Продажи идут параллельно с работами в поле',
+    salesLayerShort: 'Продажи, параллельно',
+    salesLayerAria: (phase: string) => `Продажи идут одновременно с фазой «${phase}»`,
     goToMarket: 'Открыть сезонность цен',
     ariaLabel: (phase: string) => `Фаза сезона: ${phase}`,
   },
@@ -232,16 +237,28 @@ export const texts = {
     },
     liveCard: {
       kicker: 'Живой пример',
+      periodMonth: 'месяц',
       // «Хозяйство 1 200 га, Кубань: рост солярки за месяц обошёлся в 742 000 ₽»
       headline: (area: string, region: string, rub: string, period: string) =>
         `Хозяйство ${area} га, ${region}: рост солярки за ${period} обошёлся в ${rub}`,
       headlineGain: (area: string, region: string, rub: string, period: string) =>
         `Хозяйство ${area} га, ${region}: солярка за ${period} подешевела, это ${rub} в плюс`,
       caption: 'Пример на демо-хозяйстве. Допущения по затратам и демо-данные по ценам.',
+      // «Расчёт для демо-хозяйства: 1 200 га на Кубани, пшеница 800 га и подсолнечник 400 га, по демо-ценам»
+      demoCaption: (area: string, region: string, parts: string) =>
+        `Расчёт для демо-хозяйства: ${area} га, ${region}, ${parts}. Цены демо, затраты — допущения.`,
+      // «пшеница 800 га»
+      cropPart: (crop: string, area: string) => `${crop} ${area} га`,
       captionDetails: 'Как посчитано',
       fuelLabel: 'Солярка',
       priceLabel: 'Цена пшеницы',
       profitLabel: 'Прибыль хозяйства',
+      figures: {
+        wheatPrice: 'Цена пшеницы',
+        dieselPrice: 'Цена солярки',
+        seasonProfit: 'Прибыль хозяйства за сезон по текущим ценам',
+        seasonProfitShort: 'Прибыль за сезон',
+      },
       loadFailed: 'Живой пример не загрузился. Откройте «Мой бизнес сегодня»: там тот же расчёт.',
     },
     seasonStrip: {
@@ -340,7 +357,26 @@ export const texts = {
       assumptionNote: 'Допущение — пока вы не поменяли значение.',
       editedNote: 'Ваше значение',
       resetToAssumption: 'Вернуть допущение',
+      resetToDefault: 'Вернуть значение по умолчанию',
     },
+
+    validation: {
+      notNumber: 'Введите число.',
+      negative: 'Число не может быть отрицательным.',
+      areaPositive: 'Площадь должна быть больше нуля.',
+      yieldPositive: 'Урожайность должна быть больше нуля.',
+      required: 'Заполните это поле.',
+      tooBig: 'Слишком большое число. Проверьте, нет ли лишних нулей.',
+      commaHint: 'Дробную часть можно писать через запятую или точку.',
+      fixErrors: 'Исправьте отмеченные поля, чтобы продолжить.',
+    },
+
+    summary: {
+      nonFuelCost: (rub: string) => `без солярки: ${rub}`,
+    },
+
+    saveAndView: 'Сохранить и посмотреть',
+    resetToDemo: 'Сбросить к демо-хозяйству',
 
     finish: 'Показать мой бизнес',
     saving: 'Сохраняем…',
@@ -495,7 +531,7 @@ export const texts = {
     },
     summary: {
       title: 'Что это значит для урожая?',
-      dryHint: 'Сухая весна и начало лета обычно бьют по урожайности сильнее всего.',
+      dryHint: 'Нехватка осадков в период налива и созревания бьёт по урожайности. Сравнивайте осадки сезона с нормой.',
       weatherToRub: 'Погода меняет урожай, а урожай — прибыль. Сколько это в рублях, смотрите в «Почему изменилась прибыль».',
       toWhy: 'Разобрать причины',
     },
@@ -574,7 +610,7 @@ export const texts = {
       total: 'Общее изменение',
       perHa: 'Рублей с гектара',
       onFarm: 'Рублей на хозяйство',
-      order: 'Считаем по очереди: цена, потом урожайность, потом затраты.',
+      order: 'Считаем по очереди: цена, урожайность, солярка, прочие затраты.',
       summary: (rub: string, period: string) => `Прибыль изменилась на ${rub} к периоду ${period}`,
       biggest: (factor: string, rub: string) => `Больше всего повлиял фактор «${factor}»: ${rub}`,
       clickHint: 'Нажмите на столбец, чтобы раскопать причину.',
@@ -609,9 +645,21 @@ export const texts = {
     },
     factorCause: {
       title: 'Что показала погода сезона?',
-      // «Осадки в мае–июне на 40% ниже нормы»
       rainBelow: (months: string, pct: string) => `Осадки в ${months} на ${pct} ниже нормы`,
       rainAbove: (months: string, pct: string) => `Осадки в ${months} на ${pct} выше нормы`,
+      // «Август–октябрь: выпало 56 мм при норме 109 мм, это на 48% меньше»
+      rainBelowPeriod: (period: string, pct: string, mm: string, normMm: string) =>
+        `${period}: выпало ${mm} мм при норме ${normMm} мм, это на ${pct} меньше`,
+      rainAbovePeriod: (period: string, pct: string, mm: string, normMm: string) =>
+        `${period}: выпало ${mm} мм при норме ${normMm} мм, это на ${pct} больше`,
+      // «Август: 12 мм при норме 34 мм»
+      rainMonth: (month: string, mm: string, normMm: string) => `${month}: ${mm} мм при норме ${normMm} мм`,
+      dryLateSeason: (period: string) =>
+        `Сухим выдался период ${period}: влаги не хватало, когда формировался урожай.`,
+      rainNormalElsewhere: (period: string) =>
+        `В ${period} осадки были в норме или выше, так что причина не в них.`,
+      yieldVsRain: (yieldPct: string, rainPct: string) =>
+        `Урожайность изменилась на ${yieldPct}, осадки — на ${rainPct} к норме`,
       heat: (days: string) => `Дней с жарой выше 35 °C: ${days}`,
       noWeather: 'Данных о погоде за этот сезон нет.',
       link: 'Смотреть урожай и погоду',

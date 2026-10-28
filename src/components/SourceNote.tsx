@@ -18,11 +18,13 @@ export interface SourceNoteProps {
   source: SourceRef | SourceRef[];
   /** Дополнение после источника: «расчёт по профилю хозяйства» */
   note?: string;
+  /** Не показывать бейдж демо — когда он уже стоит рядом (шапка карточки) */
+  hideDemoBadge?: boolean;
   className?: string;
 }
 
 /** «Источник: Росстат / ЕМИСС · данные на 1 октября 2026» + ссылка + бейдж демо при demo: true. */
-export default function SourceNote({ source, note, className = '' }: SourceNoteProps) {
+export default function SourceNote({ source, note, hideDemoBadge = false, className = '' }: SourceNoteProps) {
   const all = Array.isArray(source) ? source : [source];
   // Один источник с одной датой показываем один раз
   const list = all.filter((s, i) => all.findIndex((t) => t.source === s.source && t.updated_at === s.updated_at) === i);
@@ -55,7 +57,7 @@ export default function SourceNote({ source, note, className = '' }: SourceNoteP
         ))}
         {note && <span>. {note}</span>}
       </span>
-      {anyDemo && <DemoBadge size="sm" />}
+      {anyDemo && !hideDemoBadge && <DemoBadge size="sm" />}
     </div>
   );
 }

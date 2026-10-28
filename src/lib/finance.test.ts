@@ -11,7 +11,7 @@ import {
   periodStateAt,
   sensitivity,
 } from './finance';
-import { changePct, valueAt } from './series';
+import { changePct, monthAgo, valueAt } from './series';
 
 const A = (value: number) => ({ value, assumption: false });
 
@@ -259,5 +259,26 @@ describe('applyWhatIf и sensitivity', () => {
     expect(yld.lowProfit).toBeCloseTo(price.lowProfit, 6);
     const r10 = sensitivity(profile, farmPrices, 0.1).find((b) => b.factor === 'price')!;
     expect(r10.highProfit - base).toBeCloseTo(0.1 * revenue, 4);
+  });
+});
+
+describe('monthAgo', () => {
+  it('тот же день месяцем раньше', () => {
+    expect(monthAgo('2026-10-26')).toBe('2026-09-26');
+    expect(monthAgo('2026-10-26', 3)).toBe('2026-07-26');
+  });
+  it('нет такого дня — последний день месяца', () => {
+    expect(monthAgo('2026-03-31')).toBe('2026-02-28');
+    expect(monthAgo('2026-05-31')).toBe('2026-04-30');
+  });
+  it('переход через год', () => {
+    expect(monthAgo('2026-01-15')).toBe('2025-12-15');
+    expect(monthAgo('2026-02-10', 14)).toBe('2024-12-10');
+  });
+  it('високосный год', () => {
+    expect(monthAgo('2024-03-31')).toBe('2024-02-29');
+    expect(monthAgo('2025-02-28', 12)).toBe('2024-02-28');
+    expect(monthAgo('2000-03-30')).toBe('2000-02-29');
+    expect(monthAgo('2100-03-30')).toBe('2100-02-28');
   });
 });

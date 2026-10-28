@@ -21,7 +21,7 @@ type AsButton = CommonProps & { to?: never; href?: never } & Omit<ButtonHTMLAttr
 export type ButtonProps = AsLink | AsAnchor | AsButton;
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 select-none';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 select-none';
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'rounded-control bg-accent text-accent-ink shadow-lift hover:bg-accent-strong active:translate-y-px',
