@@ -1,0 +1,46 @@
+{
+ "indicator": "gross_harvest",
+ "region": "saratov",
+ "crop": "sunflower",
+ "unit": "тыс. т",
+ "source": "Росстат / ЕМИСС (демо-ряд)",
+ "source_url": "https://www.fedstat.ru/",
+ "updated_at": "2026-10-15",
+ "frequency": "year",
+ "demo": true,
+ "series": [
+  {
+   "date": "2019-01-01",
+   "value": 1177.9
+  },
+  {
+   "date": "2020-01-01",
+   "value": 958.8
+  },
+  {
+   "date": "2021-01-01",
+   "value": 1219.3
+  },
+  {
+   "date": "2022-01-01",
+   "value": 1578.5
+  },
+  {
+   "date": "2023-01-01",
+   "value": 1220.1
+  },
+  {
+   "date": "2024-01-01",
+   "value": 1105.1
+  },
+  {
+   "date": "2025-01-01",
+   "value": 1456.1
+  },
+  {
+   "date": "2026-01-01",
+   "value": 1249.4
+  }
+ ],
+ "note": "Демо-ряд: валовой сбор = посевная площадь × урожайность / 10 (согласован с рядами sown_area и yield)."
+}

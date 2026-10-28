@@ -1,0 +1,46 @@
+{
+ "indicator": "gross_harvest",
+ "region": "krasnodar",
+ "crop": "sunflower",
+ "unit": "тыс. т",
+ "source": "Росстат / ЕМИСС (демо-ряд)",
+ "source_url": "https://www.fedstat.ru/",
+ "updated_at": "2026-10-15",
+ "frequency": "year",
+ "demo": true,
+ "series": [
+  {
+   "date": "2019-01-01",
+   "value": 1198.8
+  },
+  {
+   "date": "2020-01-01",
+   "value": 1087.8
+  },
+  {
+   "date": "2021-01-01",
+   "value": 1298.7
+  },
+  {
+   "date": "2022-01-01",
+   "value": 1428.8
+  },
+  {
+   "date": "2023-01-01",
+   "value": 1245.7
+  },
+  {
+   "date": "2024-01-01",
+   "value": 1089.5
+  },
+  {
+   "date": "2025-01-01",
+   "value": 1403.2
+  },
+  {
+   "date": "2026-01-01",
+   "value": 1297.0
+  }
+ ],
+ "note": "Демо-ряд: валовой сбор = посевная площадь × урожайность / 10 (согласован с рядами sown_area и yield)."
+}

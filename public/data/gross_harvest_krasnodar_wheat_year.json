@@ -1,0 +1,46 @@
+{
+ "indicator": "gross_harvest",
+ "region": "krasnodar",
+ "crop": "wheat",
+ "unit": "тыс. т",
+ "source": "Росстат / ЕМИСС (демо-ряд)",
+ "source_url": "https://www.fedstat.ru/",
+ "updated_at": "2026-10-15",
+ "frequency": "year",
+ "demo": true,
+ "series": [
+  {
+   "date": "2019-01-01",
+   "value": 8485.8
+  },
+  {
+   "date": "2020-01-01",
+   "value": 7488.1
+  },
+  {
+   "date": "2021-01-01",
+   "value": 9115.6
+  },
+  {
+   "date": "2022-01-01",
+   "value": 10008.1
+  },
+  {
+   "date": "2023-01-01",
+   "value": 8107.1
+  },
+  {
+   "date": "2024-01-01",
+   "value": 7670.2
+  },
+  {
+   "date": "2025-01-01",
+   "value": 9475.1
+  },
+  {
+   "date": "2026-01-01",
+   "value": 8906.1
+  }
+ ],
+ "note": "Демо-ряд: валовой сбор = посевная площадь × урожайность / 10 (согласован с рядами sown_area и yield)."
+}

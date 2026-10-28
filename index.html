@@ -3,11 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ebe8de" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1411" media="(prefers-color-scheme: dark)" />
     <title>Агромониторинг</title>
+    <script>
+      // Тема до первой отрисовки, без вспышки: выбор пользователя из localStorage, иначе системная.
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem('agromonitoring.theme');
+        } catch (e) {}
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700&display=swap&subset=cyrillic"
+      href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap&subset=cyrillic"
       rel="stylesheet"
     />
   </head>

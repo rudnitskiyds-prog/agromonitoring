@@ -1,0 +1,46 @@
+{
+ "indicator": "gross_harvest",
+ "region": "krasnodar",
+ "crop": "barley",
+ "unit": "тыс. т",
+ "source": "Росстат / ЕМИСС (демо-ряд)",
+ "source_url": "https://www.fedstat.ru/",
+ "updated_at": "2026-10-15",
+ "frequency": "year",
+ "demo": true,
+ "series": [
+  {
+   "date": "2019-01-01",
+   "value": 1026.4
+  },
+  {
+   "date": "2020-01-01",
+   "value": 924.5
+  },
+  {
+   "date": "2021-01-01",
+   "value": 1158.5
+  },
+  {
+   "date": "2022-01-01",
+   "value": 1228.8
+  },
+  {
+   "date": "2023-01-01",
+   "value": 1053.6
+  },
+  {
+   "date": "2024-01-01",
+   "value": 1022.3
+  },
+  {
+   "date": "2025-01-01",
+   "value": 1121.7
+  },
+  {
+   "date": "2026-01-01",
+   "value": 1187.2
+  }
+ ],
+ "note": "Демо-ряд: валовой сбор = посевная площадь × урожайность / 10 (согласован с рядами sown_area и yield)."
+}

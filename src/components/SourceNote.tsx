@@ -1,0 +1,64 @@
+import { ExternalLink } from 'lucide-react';
+import type { SourceRef } from '../types';
+import { DemoBadge } from './Badges';
+
+import { texts } from '../content/texts';
+
+const L_SOURCE = texts.common.source.label;
+const L_SOURCES = 'Источники'; // TODO(copywriter): texts.common.source.labelPlural
+const asOf = (date: string) => {
+  const s = texts.common.source.dataAsOf(date);
+  return s.charAt(0).toLowerCase() + s.slice(1);
+};
+
+// TODO(finance-modeler): заменить на formatDate из src/lib/format.ts, когда появится в контракте.
+function formatDate(iso: string): string {
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s*г\.$/, '');
+}
+
+export interface SourceNoteProps {
+  /** Один источник или несколько (график с двумя рядами из разных источников) */
+  source: SourceRef | SourceRef[];
+  /** Дополнение после источника: «расчёт по профилю хозяйства» */
+  note?: string;
+  className?: string;
+}
+
+/** «Источник: Росстат / ЕМИСС · данные на 1 октября 2026» + ссылка + бейдж демо при demo: true. */
+export default function SourceNote({ source, note, className = '' }: SourceNoteProps) {
+  const list = Array.isArray(source) ? source : [source];
+  const anyDemo = list.some((s) => s.demo);
+  return (
+    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs leading-5 text-muted ${className}`}>
+      <span className="min-w-0">
+        <span className="font-medium text-ink/70">{list.length > 1 ? L_SOURCES : L_SOURCE}:</span>{' '}
+        {list.map((s, i) => (
+          <span key={`${s.source}-${i}`}>
+            {i > 0 && <span aria-hidden> · </span>}
+            {s.source_url ? (
+              <a
+                href={s.source_url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-baseline gap-0.5 underline decoration-line-strong underline-offset-2 hover:text-accent hover:decoration-accent"
+              >
+                {s.source}
+                <ExternalLink size={11} className="relative top-px" aria-hidden />
+              </a>
+            ) : (
+              s.source
+            )}
+            <span className="num">
+              {', '}
+              {asOf(formatDate(s.updated_at))}
+            </span>
+          </span>
+        ))}
+        {note && <span>. {note}</span>}
+      </span>
+      {anyDemo && <DemoBadge size="sm" />}
+    </div>
+  );
+}

@@ -1,0 +1,46 @@
+{
+ "indicator": "gross_harvest",
+ "region": "krasnodar",
+ "crop": "corn",
+ "unit": "тыс. т",
+ "source": "Росстат / ЕМИСС (демо-ряд)",
+ "source_url": "https://www.fedstat.ru/",
+ "updated_at": "2026-10-15",
+ "frequency": "year",
+ "demo": true,
+ "series": [
+  {
+   "date": "2019-01-01",
+   "value": 1923.5
+  },
+  {
+   "date": "2020-01-01",
+   "value": 1631.0
+  },
+  {
+   "date": "2021-01-01",
+   "value": 1898.0
+  },
+  {
+   "date": "2022-01-01",
+   "value": 2162.4
+  },
+  {
+   "date": "2023-01-01",
+   "value": 1862.9
+  },
+  {
+   "date": "2024-01-01",
+   "value": 1788.1
+  },
+  {
+   "date": "2025-01-01",
+   "value": 2132.9
+  },
+  {
+   "date": "2026-01-01",
+   "value": 2063.3
+  }
+ ],
+ "note": "Демо-ряд: валовой сбор = посевная площадь × урожайность / 10 (согласован с рядами sown_area и yield)."
+}

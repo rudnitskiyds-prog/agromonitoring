@@ -1,0 +1,46 @@
+{
+ "indicator": "gross_harvest",
+ "region": "saratov",
+ "crop": "barley",
+ "unit": "тыс. т",
+ "source": "Росстат / ЕМИСС (демо-ряд)",
+ "source_url": "https://www.fedstat.ru/",
+ "updated_at": "2026-10-15",
+ "frequency": "year",
+ "demo": true,
+ "series": [
+  {
+   "date": "2019-01-01",
+   "value": 499.9
+  },
+  {
+   "date": "2020-01-01",
+   "value": 425.0
+  },
+  {
+   "date": "2021-01-01",
+   "value": 524.1
+  },
+  {
+   "date": "2022-01-01",
+   "value": 622.6
+  },
+  {
+   "date": "2023-01-01",
+   "value": 477.1
+  },
+  {
+   "date": "2024-01-01",
+   "value": 453.6
+  },
+  {
+   "date": "2025-01-01",
+   "value": 632.0
+  },
+  {
+   "date": "2026-01-01",
+   "value": 587.7
+  }
+ ],
+ "note": "Демо-ряд: валовой сбор = посевная площадь × урожайность / 10 (согласован с рядами sown_area и yield)."
+}

@@ -1,0 +1,273 @@
+// Линейный график по правилам раздела 8: линии 2 px, приглушённая сетка, подпись у линии,
+// выделенная последняя точка, тултип, одна ось Y, цвет закреплён за сущностью (культурой).
+import { useMemo } from 'react';
+import {
+  CartesianGrid,
+  Line,
+  LineChart as RLineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  usePlotArea,
+  useXAxisScale,
+  useYAxisScale,
+  type TooltipContentProps,
+} from 'recharts';
+import { formatNumber } from '../lib/format';
+import type { DataPoint, Frequency } from '../types';
+import { useTokenColors } from './theme';
+
+export interface ChartSeries {
+  id: string;
+  /** Подпись у линии и в тултипе: «Пшеница» */
+  label: string;
+  /** CSS-переменная цвета сущности: '--crop-wheat' (CropConfig.colorVar) */
+  colorVar: string;
+  points: DataPoint[];
+  /** Пунктир — для норм/прогнозов (например, «Норма за 5 лет»). Цвет — тот же или --muted */
+  dashed?: boolean;
+}
+
+export interface LineChartProps {
+  series: ChartSeries[];
+  frequency?: Frequency;
+  /** Формат значений оси и тултипа (единица — в ChartFrame.unit) */
+  formatValue?: (v: number) => string;
+  /** Формат даты в тултипе */
+  formatTooltipDate?: (iso: string) => string;
+  height?: number;
+  /** Подписи по оси Y не с нуля — по умолчанию auto */
+  yDomain?: [number | 'auto' | 'dataMin', number | 'auto' | 'dataMax'];
+  ariaLabel?: string;
+}
+
+// TODO(finance-modeler): форматы дат — в src/lib/format.ts, когда появятся в контракте.
+const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const MONTHS_FULL = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+
+function tickDate(iso: string, f: Frequency): string {
+  const y = iso.slice(2, 4);
+  const m = Number(iso.slice(5, 7)) - 1;
+  const d = Number(iso.slice(8, 10));
+  if (f === 'year') return iso.slice(0, 4);
+  if (f === 'month') return m === 0 ? `${MONTHS_SHORT[m]} ’${y}` : MONTHS_SHORT[m];
+  return `${d} ${MONTHS_SHORT[m]}`;
+}
+function tooltipDate(iso: string, f: Frequency): string {
+  const m = Number(iso.slice(5, 7)) - 1;
+  if (f === 'year') return iso.slice(0, 4);
+  if (f === 'month') return `${MONTHS_FULL[m][0].toUpperCase()}${MONTHS_FULL[m].slice(1)} ${iso.slice(0, 4)}`;
+  const week = f === 'week' ? 'неделя с ' : '';
+  return `${week}${Number(iso.slice(8, 10))} ${MONTHS_SHORT[m]} ${iso.slice(0, 4)}`;
+}
+
+type Row = { date: string } & Record<string, number | null | string>;
+
+export default function LineChart({
+  series,
+  frequency = 'month',
+  formatValue = (v) => formatNumber(v),
+  formatTooltipDate,
+  height = 280,
+  yDomain = ['auto', 'auto'],
+  ariaLabel,
+}: LineChartProps) {
+  const colors = useTokenColors({
+    ...Object.fromEntries(series.map((s) => [s.id, s.colorVar])),
+    __grid: '--grid',
+    __muted: '--muted',
+    __surface: '--surface',
+    __line: '--line-strong',
+  } as Record<string, string>);
+
+  const labelRoom = Math.round(Math.max(...series.map((x) => x.label.length), 4) * 7.4 + 18);
+  const { rows, lastIndex } = useMemo(() => {
+    const byDate = new Map<string, Row>();
+    for (const s of series) {
+      for (const p of s.points) {
+        const row = byDate.get(p.date) ?? ({ date: p.date } as Row);
+        row[s.id] = p.value;
+        byDate.set(p.date, row);
+      }
+    }
+    const rows = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    // Последняя непустая точка каждой серии
+    const lastIndex: Record<string, number> = {};
+    for (const s of series) {
+      for (let i = rows.length - 1; i >= 0; i--) {
+        const v = rows[i][s.id];
+        if (typeof v === 'number') {
+          lastIndex[s.id] = i;
+          break;
+        }
+      }
+    }
+    return { rows, lastIndex };
+  }, [series]);
+
+  const fmtTip = formatTooltipDate ?? ((d: string) => tooltipDate(d, frequency));
+  const tickStyle = { fill: colors.__muted, fontSize: 12, fontFamily: '"Golos Text", system-ui, sans-serif' };
+
+  return (
+    <div className="num w-full" role="img" aria-label={ariaLabel}>
+      <ResponsiveContainer width="100%" height={height}>
+        <RLineChart data={rows} margin={{ top: 16, right: labelRoom, bottom: 4, left: 2 }}>
+          <CartesianGrid vertical={false} stroke={colors.__grid} strokeWidth={1} />
+          <XAxis
+            dataKey="date"
+            tickFormatter={(d: string) => tickDate(d, frequency)}
+            tick={tickStyle}
+            axisLine={{ stroke: colors.__line }}
+            tickLine={false}
+            minTickGap={18}
+            tickMargin={8}
+          />
+          <YAxis
+            tickFormatter={(v: number) => formatValue(v)}
+            tick={tickStyle}
+            axisLine={false}
+            tickLine={false}
+            width={60}
+            domain={yDomain}
+            tickCount={5}
+          />
+          <Tooltip
+            cursor={{ stroke: colors.__line, strokeWidth: 1, strokeDasharray: '3 3' }}
+            content={(p) => (
+              <ChartTooltip {...p} series={series} colors={colors} formatValue={formatValue} formatDate={fmtTip} />
+            )}
+            isAnimationActive={false}
+          />
+          {series.map((s) => (
+            <Line
+              key={s.id}
+              type="monotone"
+              dataKey={s.id}
+              name={s.label}
+              stroke={colors[s.id]}
+              strokeWidth={2}
+              strokeDasharray={s.dashed ? '5 4' : undefined}
+              connectNulls={false}
+              isAnimationActive={false}
+              activeDot={{ r: 4, strokeWidth: 2, stroke: colors.__surface, fill: colors[s.id] }}
+              dot={(props: { cx?: number; cy?: number; index?: number }) => {
+                const { cx, cy, index } = props;
+                if (index !== lastIndex[s.id] || cx == null || cy == null) return <g key={`d-${s.id}-${index}`} />;
+                return (
+                  <g key={`last-${s.id}`}>
+                    <circle cx={cx} cy={cy} r={7} fill={colors[s.id]} opacity={0.18} />
+                    <circle cx={cx} cy={cy} r={4} fill={colors[s.id]} stroke={colors.__surface} strokeWidth={2} />
+                  </g>
+                );
+              }}
+            />
+          ))}
+          <LineEndLabels
+            items={series
+              .filter((x) => x.id in lastIndex)
+              .map((x) => ({
+                id: x.id,
+                label: x.label,
+                color: colors[x.id],
+                date: rows[lastIndex[x.id]].date,
+                value: rows[lastIndex[x.id]][x.id] as number,
+              }))}
+            halo={colors.__surface}
+          />
+        </RLineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  series,
+  colors,
+  formatValue,
+  formatDate,
+}: Pick<TooltipContentProps<number, string>, 'active' | 'label'> & {
+  payload?: ReadonlyArray<{ dataKey?: unknown; value?: unknown }>;
+  series: ChartSeries[];
+  colors: Record<string, string>;
+  formatValue: (v: number) => string;
+  formatDate: (iso: string) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="num min-w-[160px] rounded-control border border-line bg-surface px-3 py-2 text-sm shadow-pop">
+      <p className="mb-1.5 text-xs text-muted">{formatDate(String(label))}</p>
+      <ul className="space-y-1">
+        {series.map((s) => {
+          const item = payload.find((p) => p.dataKey === s.id);
+          const v = item?.value;
+          if (typeof v !== 'number') return null;
+          return (
+            <li key={s.id} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2 text-ink/80">
+                <span
+                  aria-hidden
+                  className="inline-block h-0.5 w-3.5 rounded-full"
+                  style={{ background: colors[s.id] }}
+                />
+                {s.label}
+              </span>
+              <span className="font-semibold text-ink">{formatValue(v)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Подписи у концов линий справа от последней точки; разводятся по вертикали, чтобы не слипались. */
+function LineEndLabels({
+  items,
+  halo,
+}: {
+  items: Array<{ id: string; label: string; color: string; date: string; value: number }>;
+  halo: string;
+}) {
+  const xScale = useXAxisScale();
+  const yScale = useYAxisScale();
+  const area = usePlotArea();
+  if (!xScale || !yScale || !area) return null;
+  const GAP = 16;
+  const placed = items
+    .map((it) => ({ ...it, x: Number(xScale(it.date)), y: Number(yScale(it.value)) }))
+    .filter((it) => Number.isFinite(it.x) && Number.isFinite(it.y))
+    .sort((a, b) => a.y - b.y)
+    .map((it) => ({ ...it, ly: it.y }));
+  for (let i = 1; i < placed.length; i++) placed[i].ly = Math.max(placed[i].ly, placed[i - 1].ly + GAP);
+  const bottom = area.y + area.height;
+  const overflow = placed.length ? placed[placed.length - 1].ly - bottom : 0;
+  if (overflow > 0) for (const p of placed) p.ly -= overflow;
+  for (let i = placed.length - 2; i >= 0; i--) placed[i].ly = Math.min(placed[i].ly, placed[i + 1].ly - GAP);
+  return (
+    <g className="recharts-line-end-labels" pointerEvents="none">
+      {placed.map((p) => (
+        <text
+          key={p.id}
+          x={p.x + 10}
+          y={p.ly}
+          dy="0.35em"
+          textAnchor="start"
+          fill={p.color}
+          fontSize={12.5}
+          fontWeight={600}
+          fontFamily='"Golos Text", system-ui, sans-serif'
+          paintOrder="stroke"
+          stroke={halo}
+          strokeWidth={4}
+          strokeLinejoin="round"
+        >
+          {p.label}
+        </text>
+      ))}
+    </g>
+  );
+}

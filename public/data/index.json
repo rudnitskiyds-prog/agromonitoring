@@ -1,0 +1,475 @@
+{
+ "generated_at": "2026-10-28T05:17:46Z",
+ "files": [
+  {
+   "indicator": "active_temp_sum",
+   "region": "krasnodar",
+   "crop": null,
+   "frequency": "month",
+   "file": "active_temp_sum_krasnodar_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "active_temp_sum",
+   "region": "saratov",
+   "crop": null,
+   "frequency": "month",
+   "file": "active_temp_sum_saratov_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "diesel_price",
+   "region": "krasnodar",
+   "crop": null,
+   "frequency": "week",
+   "file": "diesel_price_krasnodar_week.json",
+   "demo": true,
+   "source": "Росстат, мониторинг цен на нефтепродукты (демо-ряд)",
+   "updated_at": "2026-10-26"
+  },
+  {
+   "indicator": "diesel_price",
+   "region": "saratov",
+   "crop": null,
+   "frequency": "week",
+   "file": "diesel_price_saratov_week.json",
+   "demo": true,
+   "source": "Росстат, мониторинг цен на нефтепродукты (демо-ряд)",
+   "updated_at": "2026-10-26"
+  },
+  {
+   "indicator": "dry_days",
+   "region": "krasnodar",
+   "crop": null,
+   "frequency": "month",
+   "file": "dry_days_krasnodar_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "dry_days",
+   "region": "saratov",
+   "crop": null,
+   "frequency": "month",
+   "file": "dry_days_saratov_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "krasnodar",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "gross_harvest_krasnodar_barley_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "krasnodar",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "gross_harvest_krasnodar_corn_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "krasnodar",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "gross_harvest_krasnodar_sunflower_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "krasnodar",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "gross_harvest_krasnodar_wheat_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "saratov",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "gross_harvest_saratov_barley_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "saratov",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "gross_harvest_saratov_corn_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "saratov",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "gross_harvest_saratov_sunflower_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "saratov",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "gross_harvest_saratov_wheat_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "key_rate",
+   "region": "russia",
+   "crop": null,
+   "frequency": "event",
+   "file": "key_rate_russia_event.json",
+   "demo": false,
+   "source": "Банк России",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "precipitation",
+   "region": "krasnodar",
+   "crop": null,
+   "frequency": "month",
+   "file": "precipitation_krasnodar_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "precipitation",
+   "region": "saratov",
+   "crop": null,
+   "frequency": "month",
+   "file": "precipitation_saratov_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "krasnodar",
+   "crop": "barley",
+   "frequency": "month",
+   "file": "producer_price_krasnodar_barley_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "krasnodar",
+   "crop": "corn",
+   "frequency": "month",
+   "file": "producer_price_krasnodar_corn_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "krasnodar",
+   "crop": "sunflower",
+   "frequency": "month",
+   "file": "producer_price_krasnodar_sunflower_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "krasnodar",
+   "crop": "wheat",
+   "frequency": "month",
+   "file": "producer_price_krasnodar_wheat_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "saratov",
+   "crop": "barley",
+   "frequency": "month",
+   "file": "producer_price_saratov_barley_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "saratov",
+   "crop": "corn",
+   "frequency": "month",
+   "file": "producer_price_saratov_corn_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "saratov",
+   "crop": "sunflower",
+   "frequency": "month",
+   "file": "producer_price_saratov_sunflower_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "saratov",
+   "crop": "wheat",
+   "frequency": "month",
+   "file": "producer_price_saratov_wheat_month.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-01"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "krasnodar",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "sown_area_krasnodar_barley_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "krasnodar",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "sown_area_krasnodar_corn_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "krasnodar",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "sown_area_krasnodar_sunflower_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "krasnodar",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "sown_area_krasnodar_wheat_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "saratov",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "sown_area_saratov_barley_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "saratov",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "sown_area_saratov_corn_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "saratov",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "sown_area_saratov_sunflower_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "saratov",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "sown_area_saratov_wheat_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "temperature_mean",
+   "region": "krasnodar",
+   "crop": null,
+   "frequency": "month",
+   "file": "temperature_mean_krasnodar_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "temperature_mean",
+   "region": "saratov",
+   "crop": null,
+   "frequency": "month",
+   "file": "temperature_mean_saratov_month.json",
+   "demo": false,
+   "source": "Open-Meteo, архив ERA5 (CC BY 4.0)",
+   "updated_at": "2026-10-27"
+  },
+  {
+   "indicator": "yield",
+   "region": "krasnodar",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "yield_krasnodar_barley_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "krasnodar",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "yield_krasnodar_corn_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "krasnodar",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "yield_krasnodar_sunflower_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "krasnodar",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "yield_krasnodar_wheat_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "russia",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "yield_russia_barley_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "russia",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "yield_russia_corn_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "russia",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "yield_russia_sunflower_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "russia",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "yield_russia_wheat_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "saratov",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "yield_saratov_barley_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "saratov",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "yield_saratov_corn_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "saratov",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "yield_saratov_sunflower_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  },
+  {
+   "indicator": "yield",
+   "region": "saratov",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "yield_saratov_wheat_year.json",
+   "demo": true,
+   "source": "Росстат / ЕМИСС (демо-ряд)",
+   "updated_at": "2026-10-15"
+  }
+ ]
+}
