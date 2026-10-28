@@ -6,7 +6,7 @@ import { texts } from '../content/texts';
 import ThemeToggle from './ThemeToggle';
 
 const C = texts.common;
-const L_MENU = 'Меню'; // TODO(copywriter): короткая подпись кнопки меню (aria — nav.menuOpen)
+const L_MENU = C.nav.menu;
 const L_CLOSE = C.actions.close;
 
 const NAV = Object.values(ROUTES).filter((r) => r.path !== ROUTES.home.path);

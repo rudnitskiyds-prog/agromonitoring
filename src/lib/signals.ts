@@ -16,7 +16,7 @@ import type {
 } from '../types';
 import { CROPS } from '../config/regions';
 import { ROUTES } from '../routes';
-import { formatNumber, formatPct, formatRub, NBSP } from './format';
+import { formatDate, formatNumber, formatPct, formatRub, NBSP } from './format';
 import { chaToT } from './finance';
 
 export const WEATHER_RISK_THRESHOLDS = {
@@ -34,11 +34,6 @@ export const WEATHER_WORSE_PRIORITY = 1_000_000;
 export const WEATHER_WORSE_PRIORITY_NEXT = 100;
 
 const EMPTY_SOURCE: SourceRef = { source: '', source_url: '', updated_at: '', demo: false };
-
-const MONTHS_GEN = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
-];
 
 /** Род названия культуры — для «подешевела / подешевел». */
 const CROP_FEMININE: Record<CropId, boolean> = { wheat: true, barley: false, sunflower: false, corn: true };
@@ -145,10 +140,10 @@ function dieselSignal(analyses: FactorAnalysis[], source: SourceRef): Signal | n
 function seasonalitySignals(ctx: Parameters<BuildSignals>[0], source: SourceRef): Signal[] {
   const out: Signal[] = [];
   (ctx.seasonality ?? []).forEach((d, i) => {
-    // Порядок отклонений соответствует ctx.profile.crops (у SeasonalDeviation нет поля crop).
-    const plan = ctx.profile.crops[i];
-    const crop = plan?.crop;
-    const monthGen = MONTHS_GEN[d.month - 1] ?? '';
+    // Культура — по d.crop; откат на порядок ctx.profile.crops, только если crop не задан.
+    const plan = d.crop !== undefined ? ctx.profile.crops.find((c) => c.crop === d.crop) : ctx.profile.crops[i];
+    const crop = d.crop ?? plan?.crop;
+    const monthGen = formatDate(`2000-${String(d.month).padStart(2, '0')}`, 'monthGenitive');
     const prefix = crop ? `${CROP_SHORT[crop]}: ц` : 'Ц';
     const dev = d.deviationPct;
     let text: string;
@@ -256,13 +251,12 @@ export const pickAdvice: PickAdvice = (signals) => {
 const dayMs = 86_400_000;
 const toDay = (iso: string) => Math.round(Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / dayMs);
 const dayNum = (iso: string) => Number(iso.slice(8, 10));
-const monthIdx = (iso: string) => Number(iso.slice(5, 7)) - 1;
 
-/** «4 ноября», «4–5 ноября», «30 октября – 2 ноября» */
+/** «4 ноября», «4–5 ноября», «30 октября – 2 ноября» (через formatDate). */
 export function formatDayRange(from: string, to: string): string {
-  if (from === to) return `${dayNum(from)}${NBSP}${MONTHS_GEN[monthIdx(from)]}`;
-  if (from.slice(0, 7) === to.slice(0, 7)) return `${dayNum(from)}–${dayNum(to)}${NBSP}${MONTHS_GEN[monthIdx(to)]}`;
-  return `${dayNum(from)}${NBSP}${MONTHS_GEN[monthIdx(from)]} – ${dayNum(to)}${NBSP}${MONTHS_GEN[monthIdx(to)]}`;
+  if (from === to) return formatDate(from, 'dayMonth');
+  if (from.slice(0, 7) === to.slice(0, 7)) return `${dayNum(from)}–${formatDate(to, 'dayMonth')}`;
+  return `${formatDate(from, 'dayMonth')} – ${formatDate(to, 'dayMonth')}`;
 }
 
 const formatTemp = (t: number, sign = false) => {
@@ -297,7 +291,7 @@ export const detectWeatherRisks: DetectWeatherRisks = (forecast) => {
   const T = WEATHER_RISK_THRESHOLDS;
   const days = [...forecast].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   const inSeason = (iso: string, from: number, to: number) => {
-    const m = monthIdx(iso) + 1;
+    const m = Number(iso.slice(5, 7));
     return m >= from && m <= to;
   };
   const risks: WeatherRisk[] = [];

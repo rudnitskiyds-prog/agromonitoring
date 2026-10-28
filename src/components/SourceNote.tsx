@@ -3,20 +3,15 @@ import type { SourceRef } from '../types';
 import { DemoBadge } from './Badges';
 
 import { texts } from '../content/texts';
+import { formatDate } from '../lib/format';
 
 const L_SOURCE = texts.common.source.label;
-const L_SOURCES = 'Источники'; // TODO(copywriter): texts.common.source.labelPlural
+const L_SOURCES = texts.common.source.labelPlural;
 const asOf = (date: string) => {
   const s = texts.common.source.dataAsOf(date);
   return s.charAt(0).toLowerCase() + s.slice(1);
 };
 
-// TODO(finance-modeler): заменить на formatDate из src/lib/format.ts, когда появится в контракте.
-function formatDate(iso: string): string {
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s*г\.$/, '');
-}
 
 export interface SourceNoteProps {
   /** Один источник или несколько (график с двумя рядами из разных источников) */
@@ -52,7 +47,7 @@ export default function SourceNote({ source, note, className = '' }: SourceNoteP
             )}
             <span className="num">
               {', '}
-              {asOf(formatDate(s.updated_at))}
+              {asOf(formatDate(s.updated_at, 'long'))}
             </span>
           </span>
         ))}

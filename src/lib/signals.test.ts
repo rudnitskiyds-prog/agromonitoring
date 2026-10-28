@@ -122,6 +122,23 @@ describe('buildSignals', () => {
     expect(sea.status).toBe('better');
   });
 
+  it('сезонность сопоставляется по crop, а не по порядку', () => {
+    const s = buildSignals(
+      ctx({
+        seasonality: [
+          { crop: 'sunflower', date: '2026-10-01', month: 10, currentPrice: 34200, normPrice: 38000, deviationPct: -10, status: 'worse' },
+          { crop: 'wheat', date: '2026-10-01', month: 10, currentPrice: 15900, normPrice: 15000, deviationPct: 6, status: 'better' },
+        ],
+      }),
+    );
+    const sun = s.find((x) => x.id === 'seasonality-sunflower')!;
+    const wh = s.find((x) => x.id === 'seasonality-wheat')!;
+    expect(p(sun.text)).toMatch(/^Подсолнечник: цена на 10% ниже обычной для октября/);
+    expect(sun.effectRub).toBeCloseTo(-3800 * 2.6, 6); // урожайность подсолнечника 26 ц/га
+    expect(p(wh.text)).toMatch(/^Пшеница: цена на 6% выше/);
+    expect(wh.effectRub).toBeCloseTo(900 * 5.5, 6);
+  });
+
   it('погодный риск worse — наверху, effectRub null', () => {
     const risks = detectWeatherRisks([day('2026-05-04', -2, 12)]);
     const s = buildSignals(ctx({ weatherRisks: risks }));

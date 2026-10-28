@@ -47,6 +47,7 @@
   --crop-corn: 76 84 168; /* индиго */
 
   --shadow-color: 40 44 30;
+  --rule-alpha: 0.55; /* линовка paper-ruled — только под блоки без плотного текста */
   color-scheme: light;
 }
 
@@ -81,6 +82,7 @@
   --crop-corn: 150 160 240;
 
   --shadow-color: 0 0 0;
+  --rule-alpha: 0.3;
   color-scheme: dark;
 }
 
@@ -135,8 +137,8 @@
       to bottom,
       transparent 0,
       transparent 27px,
-      rgb(var(--line) / 0.55) 27px,
-      rgb(var(--line) / 0.55) 28px
+      rgb(var(--line) / var(--rule-alpha)) 27px,
+      rgb(var(--line) / var(--rule-alpha)) 28px
     );
   }
   /* Миллиметровка — фон области графика в витрине и на главной */

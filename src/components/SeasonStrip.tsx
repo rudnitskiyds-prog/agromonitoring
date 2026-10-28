@@ -3,6 +3,7 @@
 import { useMemo, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { texts } from '../content/texts';
+import { formatDate, MONTHS_SHORT } from '../lib/format';
 import type { SeasonPhase, SeasonPhaseId } from '../types';
 
 const S = texts.seasonStrip;
@@ -13,7 +14,6 @@ export const PHASE_LABEL: Record<SeasonPhaseId, string> = {
   sales: S.sales,
 };
 const L_NOW = S.now;
-const L_WEEK = 'нед.'; // TODO(copywriter): короткая подпись недели для метки на полосе
 
 const ORDER: SeasonPhaseId[] = ['sowing', 'growing', 'harvest', 'sales'];
 
@@ -31,8 +31,6 @@ const PHASE_DOT: Record<SeasonPhaseId, string> = {
   sales: 'bg-accent/40',
 };
 
-const MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-const MONTHS_GEN = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 const YEAR = 365;
 const CUM = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
 
@@ -52,7 +50,8 @@ function isoWeek(iso: string): number {
   return 1 + Math.round(((d.getTime() - firstThu.getTime()) / 864e5 - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
 }
 
-const fmtMmdd = (mmdd: string) => `${Number(mmdd.slice(3, 5))} ${MONTHS_GEN[Number(mmdd.slice(0, 2)) - 1]}`;
+/** 'MM-DD' → «20 сентября» (год-заглушка невисокосный: 02-29 не встречается в календаре работ) */
+const fmtMmdd = (mmdd: string) => formatDate(`2001-${mmdd}`, 'dayMonth');
 
 export interface SeasonStripProps {
   phases: SeasonPhase[];
@@ -143,7 +142,7 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
               nowPct < 12 ? 'translate-x-[40%]' : nowPct > 88 ? '-translate-x-[40%]' : ''
             }`}
           >
-            {L_NOW} · {L_WEEK} {week}
+            {S.nowWeek(String(week))}
           </span>
         </div>
 
@@ -200,7 +199,7 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
             className={`absolute top-0 -translate-x-1/2 ${i % 2 ? 'hidden sm:inline' : ''}`}
             style={{ left: `${(pos / YEAR) * 100}%` }}
           >
-            {pos === 0 ? '' : MONTHS[m]}
+            {pos === 0 ? '' : MONTHS_SHORT[m]}
           </span>
         ))}
       </div>

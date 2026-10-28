@@ -86,6 +86,11 @@ describe('seasonalDeviation', () => {
     expect(d.normPrice).toBeCloseTo(p.months[9].normPrice, 9);
     expect(d.deviationPct).toBeCloseTo((d.currentPrice / d.normPrice - 1) * 100, 9);
   });
+  it('crop берётся из series.crop; null — поля нет', () => {
+    expect(seasonalDeviation(s, p).crop).toBe('wheat');
+    const d = seasonalDeviation({ ...s, crop: null }, p);
+    expect('crop' in d).toBe(false);
+  });
   it('статусы для продавца: +6% → better, −6% → worse, +2% → normal', () => {
     const mkCur = (k: number) => {
       const s2 = synthetic();

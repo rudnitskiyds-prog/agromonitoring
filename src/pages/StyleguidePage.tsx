@@ -22,7 +22,7 @@ const S = T.sections;
 
 // ── Локальные образцы (не статистика) ──────────────────────────────────────
 const SAMPLE_SOURCE: SourceRef = {
-  source: 'Образец для витрины', // TODO(copywriter): подпись источника образцов
+  source: T.sampleSource,
   source_url: '',
   updated_at: '2026-10-26',
   demo: true,
@@ -48,7 +48,7 @@ function sampleSeries(base: number, amp: number, phase: number, trend: number): 
 // ── Палитра ────────────────────────────────────────────────────────────────
 const SWATCHES: Array<{ group: string; note?: string; items: Array<{ token: string; name: string; fg?: string }> }> = [
   {
-    group: 'Поверхности и текст', // TODO(copywriter)
+    group: T.palette.surfaces,
     items: [
       { token: 'bg', name: 'Лён — фон' },
       { token: 'surface', name: 'Лист журнала' },
@@ -59,7 +59,7 @@ const SWATCHES: Array<{ group: string; note?: string; items: Array<{ token: stri
     ],
   },
   {
-    group: 'Акценты', // TODO(copywriter)
+    group: T.palette.accents,
     items: [
       { token: 'accent', name: 'Зелёный поля' },
       { token: 'accent-soft', name: 'Зелёный, фон' },
@@ -68,8 +68,8 @@ const SWATCHES: Array<{ group: string; note?: string; items: Array<{ token: stri
     ],
   },
   {
-    group: 'Культуры — цвет серии', // TODO(copywriter)
-    note: 'Закреплён за культурой на всех графиках.', // TODO(copywriter)
+    group: T.palette.crops,
+    note: T.palette.cropsNote,
     items: [
       { token: 'crop-wheat', name: 'Пшеница' },
       { token: 'crop-barley', name: 'Ячмень' },
@@ -78,7 +78,7 @@ const SWATCHES: Array<{ group: string; note?: string; items: Array<{ token: stri
     ],
   },
   {
-    group: 'Сигналы', // TODO(copywriter)
+    group: T.palette.signals,
     note: texts.common.status.legend,
     items: [
       { token: 'status-worse', name: texts.common.status.worse },
@@ -99,15 +99,15 @@ function Palette({ theme }: { theme: 'light' | 'dark' }) {
             {g.note && <p className="mt-0.5 text-xs text-muted">{g.note}</p>}
             <ul className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {g.items.map((it) => (
-                <li key={it.token} className="flex min-w-0 items-center gap-2.5">
+                <li key={it.token} className="flex min-w-0 items-start gap-2.5">
                   <span
                     className="h-9 w-9 shrink-0 rounded-control border border-ink/10"
                     style={{ background: `rgb(var(--${it.token}))` }}
                     aria-hidden
                   />
                   <span className="min-w-0 leading-tight">
-                    <span className="block truncate text-[13px]">{it.name}</span>
-                    <code className="block truncate text-[11px] text-muted">--{it.token}</code>
+                    <span className="block text-[13px] [overflow-wrap:anywhere]">{it.name}</span>
+                    <code className="block break-all text-[11px] text-muted">--{it.token}</code>
                   </span>
                 </li>
               ))}
@@ -161,8 +161,7 @@ export default function StyleguidePage() {
       <header className="max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="kicker">{T.meta}</p>
-          <DemoBadge size="sm" title="Все цифры на этой странице — образцы для показа компонентов, не статистика." />
-          {/* TODO(copywriter): подсказка бейджа витрины */}
+          <DemoBadge size="sm" title={T.demoBadgeHint} />
         </div>
         <h1 className="mt-3 text-[28px] leading-[1.1] sm:text-[40px]">{T.title}</h1>
         <p className="mt-3 max-w-prose text-[16px] leading-relaxed text-ink/80">{T.lead}</p>
@@ -319,9 +318,8 @@ export default function StyleguidePage() {
                   <StatusTag status="better" />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <StatusTag status="better" label="Окно для продаж" size="sm" />
-                  {/* TODO(copywriter): пример подписи статуса */}
-                  <StatusTag status="worse" label="Заморозок" size="sm" />
+                  <StatusTag status="better" label={T.statusSamples.better} size="sm" />
+                  <StatusTag status="worse" label={T.statusSamples.worse} size="sm" />
                   <StatusTag status="normal" plain />
                 </div>
                 <p className="text-xs text-muted">{texts.common.status.legend}</p>
@@ -388,7 +386,7 @@ export default function StyleguidePage() {
                 status="worse"
                 hint="солярка −620 ₽/га, цена −1 230 ₽/га"
                 source={SAMPLE_SOURCE}
-                className="paper-ruled"
+                className="border-l-4 border-l-accent"
               />
               <div className="grid gap-3 sm:grid-cols-3">
                 <KpiCard label="Себестоимость тонны" value={formatRub(11950, { unit: '₽/т' })} hint="при 58,4 ц/га" />

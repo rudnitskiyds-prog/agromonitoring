@@ -18,6 +18,7 @@ export const texts = {
       whatIf: 'Что если',
       why: 'Почему изменилась прибыль',
       sources: 'Источники и методика',
+      menu: 'Меню',
       menuOpen: 'Открыть меню',
       menuClose: 'Закрыть меню',
       mainLabel: 'Основная навигация',
@@ -68,6 +69,7 @@ export const texts = {
 
     source: {
       label: 'Источник',
+      labelPlural: 'Источники',
       dataAsOf: (date: string) => `Данные на ${date}`,
       line: (source: string, date: string) => `Источник: ${source}, данные на ${date}`,
       lineDemo: (source: string, date: string) => `Источник: ${source} (демо), данные на ${date}`,
@@ -197,6 +199,9 @@ export const texts = {
     sales: 'Продажи',
     now: 'Сейчас',
     nowHint: 'Текущая неделя',
+    // «Сейчас · нед. 31»
+    nowWeek: (week: string) => `Сейчас · нед. ${week}`,
+    weekShort: 'нед.',
     // «Сейчас: вегетация, неделя 31»
     current: (phase: string, week: string) => `Сейчас: ${phase}, неделя ${week}`,
     phaseHint: {
@@ -653,6 +658,19 @@ export const texts = {
     meta: 'Витрина компонентов',
     title: 'Витрина дизайн-системы',
     lead: 'Служебная страница: все компоненты и токены в обеих темах.',
+    sampleSource: 'Образец для витрины',
+    demoBadgeHint: 'Все цифры на этой странице — образцы для показа компонентов, не статистика.',
+    statusSamples: {
+      better: 'Окно для продаж',
+      worse: 'Заморозок',
+    },
+    palette: {
+      surfaces: 'Поверхности и текст',
+      accents: 'Акценты',
+      crops: 'Культуры — цвет серии',
+      cropsNote: 'Закреплён за культурой на всех графиках.',
+      signals: 'Сигналы',
+    },
     sections: {
       colors: 'Цвета',
       typography: 'Шрифты',

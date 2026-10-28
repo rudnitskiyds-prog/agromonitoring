@@ -1,6 +1,6 @@
 // Русский формат чисел. Владелец — finance-modeler.
 // Разделитель разрядов — неразрывный пробел (U+00A0), десятичная запятая, минус «−» (U+2212).
-import type { FormatNumber, FormatPct, FormatRub } from '../types';
+import type { FormatDate, FormatNumber, FormatPct, FormatRub } from '../types';
 
 export const NBSP = ' ';
 export const MINUS = '−';
@@ -83,4 +83,59 @@ export const formatPct: FormatPct = (value, opts = {}) => {
   if (!Number.isFinite(value)) return '—';
   const r = roundTo(value, digits);
   return signed(r, `${formatAbs(Math.abs(r), digits)}%`, sign);
+};
+
+// ─── Даты ────────────────────────────────────────────────────────────────────
+
+export const MONTHS_NOM = [
+  'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+  'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',
+] as const;
+export const MONTHS_GEN = [
+  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+] as const;
+export const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'] as const;
+
+const DATE_RE = /^(\d{4})-(\d{2})(?:-(\d{2}))?(?:T[\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/** Разбор 'YYYY-MM-DD' / 'YYYY-MM' без Date и часовых поясов. Время после 'T' отбрасывается. */
+export function parseIsoDate(iso: string): { year: number; month: number; day: number | null } | null {
+  const m = typeof iso === 'string' ? DATE_RE.exec(iso.trim()) : null;
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  if (m[3] === undefined) return { year, month, day: null };
+  const day = Number(m[3]);
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const dim = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  if (day < 1 || day > dim) return null;
+  return { year, month, day };
+}
+
+/**
+ * «28 октября 2026» (long, по умолчанию), «28 октября» (dayMonth), «октябрь 2026» (month),
+ * «окт» (monthShort), «октября» (monthGenitive), «2026» (year). Некорректная строка → «—».
+ * Для 'YYYY-MM' без дня: long → «октябрь 2026», dayMonth → «октября».
+ */
+export const formatDate: FormatDate = (iso, style = 'long') => {
+  const d = parseIsoDate(iso);
+  if (!d) return '—';
+  const i = d.month - 1;
+  switch (style) {
+    case 'year':
+      return String(d.year);
+    case 'monthShort':
+      return MONTHS_SHORT[i];
+    case 'monthGenitive':
+      return MONTHS_GEN[i];
+    case 'month':
+      return `${MONTHS_NOM[i]}${NBSP}${d.year}`;
+    case 'dayMonth':
+      return d.day === null ? MONTHS_GEN[i] : `${d.day}${NBSP}${MONTHS_GEN[i]}`;
+    case 'long':
+    default:
+      return d.day === null ? `${MONTHS_NOM[i]}${NBSP}${d.year}` : `${d.day}${NBSP}${MONTHS_GEN[i]}${NBSP}${d.year}`;
+  }
 };

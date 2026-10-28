@@ -95,7 +95,7 @@ export function sellerStatus(deviationPct: number, thresholdPct = DEFAULT_DEVIAT
 /**
  * Отклонение цены на дату (по умолчанию — последняя точка ряда) от нормы своего месяца.
  * Берётся последнее известное значение ≤ date; месяц — месяц этой точки.
- * Пустой ряд → Error. Норма 0 → отклонение 0 (normal).
+ * crop — из series.crop (если null — поле не ставится). Пустой ряд → Error. Норма 0 → отклонение 0 (normal).
  */
 export const seasonalDeviation: SeasonalDeviationFn = (series, profile, opts = {}) => {
   const pts = validPoints(series.series).filter((p) => opts.date === undefined || p.date <= opts.date);
@@ -105,6 +105,7 @@ export const seasonalDeviation: SeasonalDeviationFn = (series, profile, opts = {
   const normPrice = profile.months.find((m) => m.month === month)?.normPrice ?? 0;
   const deviationPct = normPrice > 0 ? (point.value / normPrice - 1) * 100 : 0;
   return {
+    ...(series.crop ? { crop: series.crop } : {}),
     date: point.date,
     month,
     currentPrice: point.value,

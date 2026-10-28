@@ -14,7 +14,7 @@ import {
   useYAxisScale,
   type TooltipContentProps,
 } from 'recharts';
-import { formatNumber } from '../lib/format';
+import { formatDate, formatNumber, parseIsoDate } from '../lib/format';
 import type { DataPoint, Frequency } from '../types';
 import { useTokenColors } from './theme';
 
@@ -42,24 +42,24 @@ export interface LineChartProps {
   ariaLabel?: string;
 }
 
-// TODO(finance-modeler): форматы дат — в src/lib/format.ts, когда появятся в контракте.
-const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-const MONTHS_FULL = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+// Даты — только через formatDate из src/lib/format.ts.
 
 function tickDate(iso: string, f: Frequency): string {
-  const y = iso.slice(2, 4);
-  const m = Number(iso.slice(5, 7)) - 1;
-  const d = Number(iso.slice(8, 10));
-  if (f === 'year') return iso.slice(0, 4);
-  if (f === 'month') return m === 0 ? `${MONTHS_SHORT[m]} ’${y}` : MONTHS_SHORT[m];
-  return `${d} ${MONTHS_SHORT[m]}`;
+  if (f === 'year') return formatDate(iso, 'year');
+  if (f === 'month') {
+    const d = parseIsoDate(iso);
+    // Январь подписываем с годом, чтобы на оси читался переход года
+    return d?.month === 1 ? `${formatDate(iso, 'monthShort')} ’${String(d.year).slice(2)}` : formatDate(iso, 'monthShort');
+  }
+  return formatDate(iso, 'dayMonth');
 }
 function tooltipDate(iso: string, f: Frequency): string {
-  const m = Number(iso.slice(5, 7)) - 1;
-  if (f === 'year') return iso.slice(0, 4);
-  if (f === 'month') return `${MONTHS_FULL[m][0].toUpperCase()}${MONTHS_FULL[m].slice(1)} ${iso.slice(0, 4)}`;
-  const week = f === 'week' ? 'неделя с ' : '';
-  return `${week}${Number(iso.slice(8, 10))} ${MONTHS_SHORT[m]} ${iso.slice(0, 4)}`;
+  if (f === 'year') return formatDate(iso, 'year');
+  if (f === 'month') {
+    const s = formatDate(iso, 'month');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  return formatDate(iso, 'long');
 }
 
 type Row = { date: string } & Record<string, number | null | string>;
