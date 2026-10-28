@@ -385,6 +385,8 @@ export interface SeasonalProfile {
 }
 
 export interface SeasonalDeviation {
+  /** Культура ряда (series.crop); по ней сигналы сопоставляют отклонение с культурой профиля */
+  crop?: CropId;
   date: string;
   month: number;
   currentPrice: number;
@@ -474,3 +476,12 @@ export type FormatNumber = (value: number, fractionDigits?: number) => string;
 export type FormatRub = (value: number, opts?: { unit?: '₽' | '₽/га' | '₽/т'; sign?: boolean; compact?: boolean }) => string;
 /** «+4%», «−3,2%» */
 export type FormatPct = (value: number, opts?: { fractionDigits?: number; sign?: boolean }) => string;
+
+/**
+ * Даты по-русски из 'YYYY-MM-DD' (или 'YYYY-MM'):
+ * long — «28 октября 2026» (по умолчанию); dayMonth — «28 октября»;
+ * month — «октябрь 2026»; monthShort — «окт»; monthGenitive — «октября» (для «нормы для октября»);
+ * year — «2026». Некорректная строка → «—».
+ */
+export type DateStyle = 'long' | 'dayMonth' | 'month' | 'monthShort' | 'monthGenitive' | 'year';
+export type FormatDate = (iso: string, style?: DateStyle) => string;
