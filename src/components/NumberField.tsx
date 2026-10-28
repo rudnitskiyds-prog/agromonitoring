@@ -4,12 +4,23 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 import { formatNumber } from '../lib/format';
 import { AssumptionBadge } from './Badges';
 
-/** «34 600», «5,5», «5.5» → число; пусто → null; мусор → NaN. */
+/**
+ * «34 600», «5,5», «5.5», «.5», «−3» → число; пусто → null; мусор и незаконченный ввод («-», «.», «1e5») → NaN.
+ * Минус — и «-», и «−» (U+2212, его ставит formatNumber).
+ */
 export function parseRuNumber(raw: string): number | null {
-  const s = raw.replace(/[\s  ]/g, '').replace(',', '.');
+  const s = raw.replace(/[\s\u00a0\u202f]/g, '').replace(/\u2212/g, '-').replace(',', '.');
   if (s === '') return null;
-  if (!/^-?\d*\.?\d*$/.test(s) || s === '.' || s === '-') return Number.NaN;
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return Number.NaN;
   return Number(s);
+}
+
+/** Одно и то же число (оба NaN, оба null, или равны с точностью до округления). */
+function sameNumber(a: number | null, b: number | null): boolean {
+  if (Object.is(a, b)) return true;
+  if (a === null || b === null) return false;
+  if (Number.isNaN(a) && Number.isNaN(b)) return true;
+  return Math.abs(a - b) < 1e-9;
 }
 
 /** Число → строка для поля в русском формате: «34 600», «48,5». */
@@ -55,10 +66,8 @@ export default function NumberField({
   const [raw, setRaw] = useState(() => toFieldString(value));
   // Синхронизация при внешнем изменении (сброс, смена региона), если строка означает другое число
   useEffect(() => {
-    const parsed = parseRuNumber(raw);
-    if (!(parsed === value || (parsed !== null && value !== null && Math.abs(parsed - value) < 1e-9))) {
-      setRaw(toFieldString(value));
-    }
+    // Перезаписываем строку только при внешнем изменении: свой промежуточный ввод («-», «.», «abc») не трогаем
+    if (!sameNumber(parseRuNumber(raw), value)) setRaw(toFieldString(value));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 

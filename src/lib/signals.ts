@@ -26,6 +26,12 @@ export const WEATHER_RISK_THRESHOLDS = {
   drySpellDays: 10,
 } as const;
 
+/**
+ * Месяцы, когда заморозок и сухой период — риск (worse): апрель–сентябрь (всходы, вегетация, налив).
+ * С октября по март — normal: основные культуры убраны, лёгкий мороз для озимых — норма.
+ */
+export const RISK_SEASON_MONTHS = { from: 4, to: 9 } as const;
+
 /** Изменение меньше этого по модулю (%) считается «почти не изменилось». */
 export const CHANGE_NOISE_PCT = 0.5;
 /** Приоритет первого погодного риска «worse» — выше любого рублёвого эффекта на гектар. */
@@ -284,8 +290,9 @@ function runs(days: DailyWeather[], test: (d: DailyWeather) => boolean): DailyWe
  * Пороги WEATHER_RISK_THRESHOLDS: заморозок tMin ≤ 0 °C, жара tMax > 35 °C,
  * сухой период — не меньше drySpellDays дней подряд с осадками < 1 мм (пропуск данных прерывает период).
  * Подряд идущие дни риска сливаются в один период.
- * Статус: жара — всегда worse; заморозок и сухой период — worse в апреле–октябре (вегетация,
- * всходы озимых), в ноябре–марте — normal (для перезимовки озимых лёгкий мороз и сухая погода — норма).
+ * Статус: жара — всегда worse; заморозок и сухой период — worse в месяцы RISK_SEASON_MONTHS
+ * (апрель–сентябрь), с октября по март — normal (культуры убраны, лёгкий мороз для озимых — норма).
+ * Месяц периода — по дате его начала.
  */
 export const detectWeatherRisks: DetectWeatherRisks = (forecast) => {
   const T = WEATHER_RISK_THRESHOLDS;
@@ -305,7 +312,7 @@ export const detectWeatherRisks: DetectWeatherRisks = (forecast) => {
       from,
       to,
       text: `Заморозок до ${formatTemp(min)} ${formatDayRange(from, to)}`,
-      status: inSeason(from, 4, 10) ? 'worse' : 'normal',
+      status: inSeason(from, RISK_SEASON_MONTHS.from, RISK_SEASON_MONTHS.to) ? 'worse' : 'normal',
     });
   }
   for (const r of runs(days, (d) => d.tMax !== null && d.tMax > T.heatTMax)) {
@@ -323,7 +330,7 @@ export const detectWeatherRisks: DetectWeatherRisks = (forecast) => {
       from,
       to,
       text: `Без дождей ${r.length}${NBSP}${plural(r.length, 'день', 'дня', 'дней')} подряд: ${formatDayRange(from, to)}`,
-      status: inSeason(from, 4, 10) ? 'worse' : 'normal',
+      status: inSeason(from, RISK_SEASON_MONTHS.from, RISK_SEASON_MONTHS.to) ? 'worse' : 'normal',
     });
   }
   return risks.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));

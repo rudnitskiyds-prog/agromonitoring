@@ -13,6 +13,12 @@ const asOf = (date: string) => {
 };
 
 
+const headOf = (t: string) => {
+  const i = t.lastIndexOf(' ');
+  return i < 0 ? '' : t.slice(0, i + 1);
+};
+const lastOf = (t: string) => t.slice(t.lastIndexOf(' ') + 1);
+
 export interface SourceNoteProps {
   /** Один источник или несколько (график с двумя рядами из разных источников) */
   source: SourceRef | SourceRef[];
@@ -43,16 +49,21 @@ export default function SourceNote({ source, note, hideDemoBadge = false, classN
                 rel="noreferrer noopener"
                 className="underline decoration-line-strong underline-offset-2 hover:text-accent hover:decoration-accent"
               >
-                {s.source}
-                <ExternalLink size={11} className="ml-0.5 inline align-baseline" aria-hidden />
+                {headOf(s.source)}
+                {/* последнее слово, значок и запятая не разрываются переносом */}
+                <span className="whitespace-nowrap">
+                  {lastOf(s.source)}
+                  <ExternalLink size={11} className="ml-0.5 inline align-baseline" aria-hidden />
+                  <span className="inline-block">,</span>
+                </span>
               </a>
             ) : (
-              s.source
+              <>
+                {headOf(s.source)}
+                <span className="whitespace-nowrap">{lastOf(s.source)},</span>
+              </>
             )}
-            <span className="num">
-              {', '}
-              {asOf(formatDate(s.updated_at, 'long'))}
-            </span>
+            <span className="num"> {asOf(formatDate(s.updated_at, 'long'))}</span>
           </span>
         ))}
         {note && <span>. {note}</span>}

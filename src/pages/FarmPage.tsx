@@ -10,7 +10,7 @@ import { texts } from '../content/texts';
 import { nonFuelCostPerHa } from '../lib/finance';
 import { formatNumber, formatRub } from '../lib/format';
 import { ROUTES } from '../routes';
-import { buildDefaultPlan, clearFarmProfile, defaultCosts, defaultYieldCha, saveFarmProfile } from '../store/farm';
+import { DEMO_FARM, buildDefaultPlan, clearFarmProfile, defaultCosts, defaultYieldCha, saveFarmProfile } from '../store/farm';
 import type { CostsPerHa, CropId, CropPlan, FarmProfile, RegionId } from '../types';
 
 const F = texts.farm;
@@ -174,7 +174,8 @@ export default function FarmPage() {
   const resetToDemo = () => {
     if (!window.confirm(F.resetConfirm)) return;
     clearFarmProfile();
-    setDraft(initialDraft(profile, false));
+    // Форма заполняется демо-хозяйством: 800 га пшеницы + 400 га подсолнечника, Краснодар
+    setDraft(initialDraft(DEMO_FARM, true));
     setTried({});
     setTouched({});
     setStorageFailed(false);

@@ -3,7 +3,7 @@ import type { DailyWeather, PeriodState, SignalContext } from '../types';
 import { ROUTES } from '../routes';
 import { DEMO_FARM } from '../store/farm';
 import { factorAnalysis } from './finance';
-import { buildSignals, detectWeatherRisks, formatDayRange, pickAdvice, WEATHER_WORSE_PRIORITY } from './signals';
+import { buildSignals, detectWeatherRisks, formatDayRange, pickAdvice, RISK_SEASON_MONTHS, WEATHER_WORSE_PRIORITY } from './signals';
 
 const p = (s: string) => s.replace(/ /g, ' ');
 
@@ -48,6 +48,15 @@ describe('detectWeatherRisks', () => {
     expect(r).toHaveLength(1);
     expect(p(r[0].text)).toBe('Без дождей 12 дней подряд: 1–12 июня');
     expect(r[0].status).toBe('worse');
+  });
+  it('сезон риска апрель–сентябрь: 28 октября −1 °C → normal, 15 сентября → worse', () => {
+    expect(RISK_SEASON_MONTHS).toEqual({ from: 4, to: 9 });
+    expect(detectWeatherRisks([day('2026-10-28', -1, 8)])[0].status).toBe('normal');
+    expect(detectWeatherRisks([day('2026-09-15', -1, 12)])[0].status).toBe('worse');
+    expect(detectWeatherRisks([day('2026-03-20', -2, 8)])[0].status).toBe('normal');
+    const dryOct = Array.from({ length: 10 }, (_, i) => day(`2026-10-${String(i + 1).padStart(2, '0')}`, 5, 15, 0));
+    expect(detectWeatherRisks(dryOct)[0].status).toBe('normal');
+    expect(detectWeatherRisks([day('2026-10-28', 20, 36)])[0].status).toBe('worse'); // жара — всегда
   });
   it('пропуски данных не считаются риском', () => {
     expect(detectWeatherRisks([day('2026-11-01', null, null, null)])).toEqual([]);

@@ -102,7 +102,7 @@ interface PhaseElProps {
   links?: Partial<Record<SeasonPhaseId, string>>;
   onSelect?: (id: SeasonPhaseId) => void;
   style?: CSSProperties;
-  /** Не дублировать в порядке табуляции (повторный кусок фазы, перешедшей через край полосы) */
+  /** Дубль легенды: сегмент полосы кликается мышью, но не в табуляции и скрыт от чтения с экрана */
   hiddenFromTab?: boolean;
 }
 
@@ -209,7 +209,7 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
                   id={s.id}
                   label={rangeLabel(s)}
                   {...common}
-                  hiddenFromTab={i > 0}
+                  hiddenFromTab
                   style={{ left: `${part.left}%`, width: `${part.width}%` }}
                   className={`absolute inset-y-0 flex min-w-0 items-center overflow-hidden border-r border-bg/70 px-2 text-left ${
                     PHASE_FILL[s.id]
@@ -235,7 +235,7 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
                 id="sales"
                 label={`${rangeLabel(salesSeg)}. ${S.salesLayer}`}
                 {...common}
-                hiddenFromTab={i > 0}
+                hiddenFromTab
                 style={{ left: `${part.left}%`, width: `${part.width}%` }}
                 className={`absolute inset-y-0 flex items-center overflow-hidden rounded-tag px-1.5 text-left ${PHASE_FILL.sales} ${hover} ${
                   activePhase === 'sales' ? 'ring-1 ring-ink' : ''

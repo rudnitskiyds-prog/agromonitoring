@@ -270,7 +270,7 @@ export const texts = {
       items: [
         {
           title: 'Рубли вместо процентов',
-          text: 'Не «солярка +4%», а сколько это стоит с гектара и с вашей площади.',
+          text: 'Вместо «солярка подорожала» — сколько это стоит вашему хозяйству: с гектара и со всей площади.',
         },
         {
           title: 'Ответ на вопрос «продавать?»',
@@ -525,6 +525,8 @@ export const texts = {
         heat: 'Жара выше 35 °C. Растения теряют влагу, налив зерна страдает.',
         dry_spell: 'Несколько дней подряд без заметных осадков.',
       },
+      seasonRuleNote:
+        'Заморозок и сухой период считаем риском с апреля по сентябрь, пока идут всходы, вегетация и налив. С октября по март это обычная погода. Жара выше 35 °C опасна в любой месяц.',
       riskPeriod: (from: string, to: string) => `${from}–${to}`,
       riskSingle: (day: string) => day,
       drySpell: (days: string) => `${days} дн. без осадков`,
@@ -647,13 +649,23 @@ export const texts = {
       title: 'Что показала погода сезона?',
       rainBelow: (months: string, pct: string) => `Осадки в ${months} на ${pct} ниже нормы`,
       rainAbove: (months: string, pct: string) => `Осадки в ${months} на ${pct} выше нормы`,
-      // «Август–октябрь: выпало 56 мм при норме 109 мм, это на 48% меньше»
+      // «Июль–август: выпало 40 мм при норме 68 мм, это на 41% меньше» (все числа приходят аргументами)
       rainBelowPeriod: (period: string, pct: string, mm: string, normMm: string) =>
         `${period}: выпало ${mm} мм при норме ${normMm} мм, это на ${pct} меньше`,
       rainAbovePeriod: (period: string, pct: string, mm: string, normMm: string) =>
         `${period}: выпало ${mm} мм при норме ${normMm} мм, это на ${pct} больше`,
-      // «Август: 12 мм при норме 34 мм»
+      // «Август: 12 мм при норме 34 мм, на 65% меньше»
       rainMonth: (month: string, mm: string, normMm: string) => `${month}: ${mm} мм при норме ${normMm} мм`,
+      rainMonthBelow: (month: string, mm: string, normMm: string, pct: string) =>
+        `${month}: ${mm} мм при норме ${normMm} мм, на ${pct} меньше`,
+      rainMonthAbove: (month: string, mm: string, normMm: string, pct: string) =>
+        `${month}: ${mm} мм при норме ${normMm} мм, на ${pct} больше`,
+      // Неполный месяц с нормой не сравниваем
+      monthIncomplete: (month: string, date: string) =>
+        `${month}: месяц ещё не закончился, данные до ${date}. С нормой не сравниваем.`,
+      // Вывод про налив и созревание
+      dryGrainFill: (month: string) =>
+        `Главный удар пришёлся на ${month}: в это время формируется и созревает урожай, а влаги не хватало.`,
       dryLateSeason: (period: string) =>
         `Сухим выдался период ${period}: влаги не хватало, когда формировался урожай.`,
       rainNormalElsewhere: (period: string) =>

@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import { ROUTES } from './routes';
 import AppShell from './components/AppShell';
 import HomePage from './pages/HomePage';
@@ -13,16 +13,18 @@ import StyleguidePage from './pages/StyleguidePage';
 import { hasSavedProfile } from './store/farm';
 
 // Повторный визит: если сайт открыт с главной и профиль уже сохранён — сразу «Мой бизнес сегодня».
-// Решение принимается один раз при загрузке, поэтому переход на главную по логотипу работает как обычно.
-const openedAtRoot = typeof window === 'undefined' || ['', '#', '#/'].includes(window.location.hash);
-const returningFarmer = openedAtRoot && hasSavedProfile();
+// Адрес меняется один раз при загрузке модуля, до первого рендера (без побочных эффектов в рендере,
+// поэтому StrictMode не мешает), и переход на главную по логотипу дальше работает как обычно.
+if (typeof window !== 'undefined' && ['', '#', '#/'].includes(window.location.hash) && hasSavedProfile()) {
+  window.history.replaceState(window.history.state, '', `#${ROUTES.today.path}`);
+}
 
 export default function App() {
   return (
     <HashRouter>
       <AppShell>
         <Routes>
-          <Route path={ROUTES.home.path} element={<HomeRoute />} />
+          <Route path={ROUTES.home.path} element={<HomePage />} />
           <Route path={ROUTES.farm.path} element={<FarmPage />} />
           <Route path={ROUTES.today.path} element={<TodayPage />} />
           <Route path={ROUTES.market.path} element={<MarketPage />} />
@@ -36,14 +38,4 @@ export default function App() {
       </AppShell>
     </HashRouter>
   );
-}
-
-let redirectDone = false;
-
-function HomeRoute() {
-  if (returningFarmer && !redirectDone) {
-    redirectDone = true;
-    return <Navigate to={ROUTES.today.path} replace />;
-  }
-  return <HomePage />;
 }
