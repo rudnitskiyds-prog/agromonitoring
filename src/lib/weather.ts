@@ -90,6 +90,14 @@ export const fetchForecast: FetchForecast = async (region, days = 16) => {
   }
 };
 
+const addDays = (iso: string, n: number): string => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+
+/**
+ * Архив ERA5 за [from, to] из Open-Meteo; при ошибке — кэш public/data/weather_{region}_archive_daily.json.
+ * Кэш хранит только последние ~400 дней: если он не покрывает запрошенный диапазон, функция бросает Error
+ * (не возвращает молча пустой или обрезанный массив). Историю по сезонам (2019 и далее) нужно брать
+ * не отсюда, а из помесячных рядов public/data (precipitation, temperature_mean, active_temp_sum, dry_days) через loadSeries.
+ */
 export const fetchArchive: FetchArchive = async (region, from, to) => {
   const url =
     `${ARCHIVE_URL}?latitude=${region.lat}&longitude=${region.lon}&daily=${DAILY}` +
@@ -101,6 +109,15 @@ export const fetchArchive: FetchArchive = async (region, from, to) => {
     return { data, origin: 'live', source: { ...SRC_ARCHIVE, updated_at: data.length ? data[data.length - 1].date : to, demo: false } };
   } catch {
     const c = await readCache('archive_daily', region);
+    const first = c.days[0]?.date;
+    const last = c.days[c.days.length - 1]?.date;
+    // конец допускаем с запасом 7 дней: ERA5 отстаёт от сегодняшней даты
+    if (!first || !last || first > from || addDays(last, 7) < to) {
+      throw new Error(
+        `Нет данных погоды за ${from} … ${to}: Open-Meteo недоступен, а офлайн-кэш покрывает только ` +
+          `${first ?? '—'} … ${last ?? '—'}. Историю по сезонам берите из помесячных рядов погоды.`,
+      );
+    }
     return fromCache(c, c.days.filter((d) => d.date >= from && d.date <= to));
   }
 };

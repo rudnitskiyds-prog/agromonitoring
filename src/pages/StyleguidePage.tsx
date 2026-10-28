@@ -1,7 +1,7 @@
 // Витрина дизайн-системы (/#/styleguide). Все цифры здесь — локальные образцы для показа
 // компонентов, помечены бейджем «Демо-данные»; это не статистика и не расчёт.
 import { ArrowRight, Calculator } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AssumptionBadge from '../components/AssumptionBadge';
 import Button from '../components/Button';
 import ChartFrame from '../components/ChartFrame';
@@ -13,9 +13,13 @@ import SeasonStrip, { PHASE_LABEL } from '../components/SeasonStrip';
 import SourceNote from '../components/SourceNote';
 import StatusTag from '../components/StatusTag';
 import { texts } from '../content/texts';
+import { loadSeries, sourceOf } from '../lib/data';
+import { computeFarmEconomics } from '../lib/finance';
 import { formatNumber, formatPct, formatRub } from '../lib/format';
+import { valueAt } from '../lib/series';
+import { DEMO_FARM } from '../store/farm';
 import { ROUTES } from '../routes';
-import type { DataPoint, SeasonPhase, SeasonPhaseId, SourceRef } from '../types';
+import type { CropId, DataPoint, FarmEconomics, MarketPrices, SeasonPhase, SeasonPhaseId, SourceRef } from '../types';
 
 const T = texts.styleguide;
 const S = T.sections;
@@ -119,6 +123,67 @@ function Palette({ theme }: { theme: 'light' | 'dark' }) {
   );
 }
 
+// ── Табличные цифры: настоящий расчёт демо-хозяйства на демо-рядах ──────────
+type DemoCalc = { econ: FarmEconomics; sources: SourceRef[] } | 'loading' | 'error';
+
+function DemoFarmTable() {
+  const [state, setState] = useState<DemoCalc>('loading');
+  useEffect(() => {
+    let alive = true;
+    const region = DEMO_FARM.region;
+    const crops = DEMO_FARM.crops.map((c) => c.crop);
+    Promise.all([
+      loadSeries({ indicator: 'diesel_price', region, frequency: 'week' }),
+      ...crops.map((crop) => loadSeries({ indicator: 'producer_price', region, crop, frequency: 'month' })),
+    ])
+      .then(([diesel, ...prices]) => {
+        const dieselPerL = valueAt(diesel)?.value;
+        const byCrop: Partial<Record<CropId, MarketPrices>> = {};
+        crops.forEach((crop, i) => {
+          const p = valueAt(prices[i])?.value;
+          if (p != null && dieselPerL != null) byCrop[crop] = { pricePerT: p, dieselPerL };
+        });
+        if (dieselPerL == null || Object.keys(byCrop).length !== crops.length) throw new Error('no data');
+        if (alive)
+          setState({ econ: computeFarmEconomics(DEMO_FARM, byCrop), sources: [diesel, ...prices].map(sourceOf) });
+      })
+      .catch(() => alive && setState('error'));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (state === 'loading') return <p className="mt-3 text-sm text-muted">{texts.common.loading.calc}</p>;
+  if (state === 'error') return <p className="mt-3 text-sm text-muted">{texts.common.errors.load}</p>;
+  const { econ, sources } = state;
+  const rows: Array<[string, number]> = [
+    [texts.common.labels.revenue, econ.revenue],
+    [texts.common.labels.cost, -econ.cost],
+    [texts.common.labels.profit, econ.profit],
+  ];
+  return (
+    <>
+      <p className="mt-3 text-xs text-muted">
+        {DEMO_FARM.name}, {formatNumber(econ.totalAreaHa)} {texts.common.units.ha}
+      </p>
+      <table className="num mt-1 w-full text-sm">
+        <tbody className="divide-y divide-line">
+          {rows.map(([k, v], i) => (
+            <tr key={i}>
+              <td className="py-1.5 text-ink/80">{k}</td>
+              <td className="py-1.5 text-right font-medium">{formatRub(v)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <SourceNote source={sources} note={texts.home.liveCard.caption} className="mt-3" />
+      <div className="mt-1.5">
+        <AssumptionBadge size="sm" />
+      </div>
+    </>
+  );
+}
+
 // ── Каркас раздела ─────────────────────────────────────────────────────────
 const SECTIONS = [
   ['colors', S.colors],
@@ -152,6 +217,7 @@ export default function StyleguidePage() {
       { id: 'wheat', label: 'Пшеница', colorVar: '--crop-wheat', points: sampleSeries(14800, 1300, 3, 40) },
       { id: 'barley', label: 'Ячмень', colorVar: '--crop-barley', points: sampleSeries(12900, 1000, 3.4, 25) },
       { id: 'corn', label: 'Кукуруза', colorVar: '--crop-corn', points: sampleSeries(11600, 900, 5, 55) },
+      { id: 'sunflower', label: 'Подсолнечник', colorVar: '--crop-sunflower', points: sampleSeries(9800, 700, 1, 60) },
     ],
     [],
   );
@@ -214,21 +280,7 @@ export default function StyleguidePage() {
                 <p className="kicker">Крупная цифра · Unbounded</p>
                 <p className="num-display mt-2 text-[40px] font-semibold leading-none">{formatRub(-742000)}</p>
                 <p className="mt-2 text-sm text-muted">Табличные цифры · tabular-nums</p>
-                <table className="num mt-3 w-full text-sm">
-                  <tbody className="divide-y divide-line">
-                    {[
-                      ['Выручка', 16_480_000],
-                      ['Затраты', -11_115_400],
-                      ['Прибыль', 5_364_600],
-                    ].map(([k, v]) => (
-                      <tr key={k as string}>
-                        <td className="py-1.5 text-ink/80">{k}</td>
-                        <td className="py-1.5 text-right font-medium">{formatRub(v as number)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <DemoBadge size="sm" className="mt-3" />
+                <DemoFarmTable />
               </div>
             </div>
           </Section>
@@ -378,7 +430,7 @@ export default function StyleguidePage() {
           </Section>
 
           <Section id="kpi" n={7} title={S.kpi}>
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,2fr)]">
+            <div className="grid gap-3">
               <KpiCard
                 size="lg"
                 label="Прибыль с гектара пшеницы за октябрь"
@@ -404,7 +456,7 @@ export default function StyleguidePage() {
             <ChartFrame
               as="h3"
               question={ROUTES.market.question}
-              lead="Образец: три культуры за 24 месяца, одна ось Y, подпись у линии, последняя точка выделена."
+              lead="Образец: четыре культуры за 24 месяца, одна ось Y, подпись у линии, последняя точка выделена."
               unit={`Цена производителей, ${texts.common.units.rubPerT}`}
               source={SAMPLE_SOURCE}
               sourceNote="Синтетический ряд для витрины"

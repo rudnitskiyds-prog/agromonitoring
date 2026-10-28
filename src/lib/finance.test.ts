@@ -253,6 +253,10 @@ describe('applyWhatIf и sensitivity', () => {
     // сортировка по размаху
     const spans = bars.map((b) => Math.abs(b.highProfit - b.lowProfit));
     expect([...spans].sort((x, y) => y - x)).toEqual(spans);
+    // цена и урожай действуют на выручку одинаково — столбцы равны
+    const yld = bars.find((b) => b.factor === 'yield')!;
+    expect(yld.highProfit).toBeCloseTo(price.highProfit, 6);
+    expect(yld.lowProfit).toBeCloseTo(price.lowProfit, 6);
     const r10 = sensitivity(profile, farmPrices, 0.1).find((b) => b.factor === 'price')!;
     expect(r10.highProfit - base).toBeCloseTo(0.1 * revenue, 4);
   });

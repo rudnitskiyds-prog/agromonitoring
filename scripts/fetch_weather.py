@@ -99,7 +99,8 @@ def main():
             days.pop()
         last_day = days[-1]["date"]
         pt = "точка {:.2f}, {:.2f}, ".format(reg["lat"], reg["lon"])
-        note_m = "Помесячный агрегат дневных данных ERA5 ({}{}). Последний месяц может быть неполным (данные до {}).".format(pt, rid, last_day)
+        note_m = ("Помесячный агрегат дневных данных ERA5 ({}{}). Данные ERA5 по {} включительно; "
+                  "последний месяц ({}) неполный: учтены только дни до этой даты.").format(pt, rid, last_day, last_day[:7])
         for ind, unit, key, rnd in (("temperature_mean", "°C", "t", 1), ("precipitation", "мм", "p", 1),
                                     ("active_temp_sum", "°C", "act", 0), ("dry_days", "дни", "dry", 0)):
             pts = []

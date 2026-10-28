@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FarmProfile } from '../types';
+import { REGIONS } from '../config/regions';
 import {
   __resetFarmStoreForTests,
   buildDefaultPlan,
   clearFarmProfile,
   DEMO_FARM,
-  FALLBACK_COSTS,
   hasSavedProfile,
   isFarmProfile,
   loadFarmProfile,
@@ -63,11 +63,16 @@ describe('DEMO_FARM и допущения', () => {
       for (const v of Object.values(c.costs)) expect(v.assumption).toBe(true);
     }
   });
-  it('buildDefaultPlan — фолбэк на собственные константы для неизвестного региона', () => {
+  it('buildDefaultPlan — затраты берутся из regions.ts: регион, иначе первый регион с культурой', () => {
+    const own = REGIONS.krasnodar?.defaultCosts?.wheat;
+    if (own) expect(buildDefaultPlan('krasnodar', 'wheat', 1).costs.seeds.value).toBe(own.seeds.value);
+    const firstCorn = Object.values(REGIONS).find((r) => r.defaultCosts?.corn)?.defaultCosts.corn;
     const p = buildDefaultPlan('nowhere', 'corn', 100);
-    expect(p.costs.seeds.value).toBe(FALLBACK_COSTS.corn.seeds);
-    expect(p.costs.fuelLitersPerHa.assumption).toBe(true);
+    expect(p.costs.seeds.value).toBe(firstCorn ? firstCorn.seeds.value : 0);
+    expect(p.costs.fuelLitersPerHa.value).toBe(firstCorn ? firstCorn.fuelLitersPerHa.value : 0);
+    for (const v of Object.values(p.costs)) expect(v.assumption).toBe(true);
     expect(p.yieldCha.value).toBeGreaterThan(0);
+    expect(p.yieldCha.assumption).toBe(true);
   });
   it('buildDefaultPlan не делит объекты с конфигом', () => {
     const a = buildDefaultPlan('krasnodar', 'wheat', 1);

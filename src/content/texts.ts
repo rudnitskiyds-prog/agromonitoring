@@ -129,6 +129,12 @@ export const texts = {
       days: 'дн.',
     },
 
+    labels: {
+      revenue: 'Выручка',
+      cost: 'Затраты',
+      profit: 'Прибыль',
+    },
+
     farmChip: {
       label: 'Хозяйство',
       // «1 200 га, Кубань»

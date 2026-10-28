@@ -23,17 +23,6 @@ const CROP_IDS: CropId[] = ['wheat', 'barley', 'sunflower', 'corn'];
 const a = (value: number): Assumable => ({ value, assumption: true });
 
 /**
- * Условное допущение: затраты на гектар, если в REGIONS[region].defaultCosts нет значений.
- * Ориентир 2026 г., ₽/га и л/га. НЕ статистика — в интерфейсе с бейджем «Допущение».
- */
-export const FALLBACK_COSTS: Record<CropId, { seeds: number; fertilizers: number; plantProtection: number; fuelLitersPerHa: number; other: number }> = {
-  wheat: { seeds: 4200, fertilizers: 9500, plantProtection: 3800, fuelLitersPerHa: 62, other: 6500 },
-  barley: { seeds: 3600, fertilizers: 8200, plantProtection: 3200, fuelLitersPerHa: 55, other: 5800 },
-  sunflower: { seeds: 5600, fertilizers: 7800, plantProtection: 4500, fuelLitersPerHa: 58, other: 6800 },
-  corn: { seeds: 7800, fertilizers: 12500, plantProtection: 4200, fuelLitersPerHa: 78, other: 8200 },
-};
-
-/**
  * Условное допущение: плановая урожайность, ц/га (в конфиге регионов её нет).
  * Порядок величин — типичный для зоны; НЕ статистика, пользователь правит в онбординге.
  */
@@ -53,23 +42,23 @@ function cloneCosts(c: CostsPerHa): CostsPerHa {
   };
 }
 
-/** Затраты по умолчанию: из конфига региона, иначе — FALLBACK_COSTS. Все поля assumption: true. */
+/**
+ * Затраты по умолчанию — условное допущение. Единственный источник чисел — REGIONS.*.defaultCosts
+ * (src/config/regions.ts), своих констант затрат здесь нет.
+ * Порядок поиска: регион хозяйства → первый регион в REGIONS, где для культуры есть затраты.
+ * Если культуры нет ни в одном регионе — нули (тоже с assumption: true), чтобы пользователь ввёл свои.
+ * Все поля всегда assumption: true, даже если в конфиге флаг забыли.
+ */
 export function defaultCosts(region: RegionId, crop: CropId): CostsPerHa {
-  const fromConfig = REGIONS[region]?.defaultCosts?.[crop];
+  const fromConfig =
+    REGIONS[region]?.defaultCosts?.[crop] ??
+    Object.values(REGIONS).find((r) => r.defaultCosts?.[crop])?.defaultCosts[crop];
   if (fromConfig) {
     const c = cloneCosts(fromConfig);
-    // Значения по умолчанию — всегда допущения, даже если в конфиге флаг забыли.
     for (const k of Object.keys(c) as Array<keyof CostsPerHa>) c[k].assumption = true;
     return c;
   }
-  const f = FALLBACK_COSTS[crop];
-  return {
-    seeds: a(f.seeds),
-    fertilizers: a(f.fertilizers),
-    plantProtection: a(f.plantProtection),
-    fuelLitersPerHa: a(f.fuelLitersPerHa),
-    other: a(f.other),
-  };
+  return { seeds: a(0), fertilizers: a(0), plantProtection: a(0), fuelLitersPerHa: a(0), other: a(0) };
 }
 
 /** Плановая урожайность по умолчанию, ц/га — условное допущение. */

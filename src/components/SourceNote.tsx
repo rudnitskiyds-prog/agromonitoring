@@ -23,7 +23,9 @@ export interface SourceNoteProps {
 
 /** «Источник: Росстат / ЕМИСС · данные на 1 октября 2026» + ссылка + бейдж демо при demo: true. */
 export default function SourceNote({ source, note, className = '' }: SourceNoteProps) {
-  const list = Array.isArray(source) ? source : [source];
+  const all = Array.isArray(source) ? source : [source];
+  // Один источник с одной датой показываем один раз
+  const list = all.filter((s, i) => all.findIndex((t) => t.source === s.source && t.updated_at === s.updated_at) === i);
   const anyDemo = list.some((s) => s.demo);
   return (
     <div className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs leading-5 text-muted ${className}`}>
@@ -37,10 +39,10 @@ export default function SourceNote({ source, note, className = '' }: SourceNoteP
                 href={s.source_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-baseline gap-0.5 underline decoration-line-strong underline-offset-2 hover:text-accent hover:decoration-accent"
+                className="underline decoration-line-strong underline-offset-2 hover:text-accent hover:decoration-accent"
               >
                 {s.source}
-                <ExternalLink size={11} className="relative top-px" aria-hidden />
+                <ExternalLink size={11} className="ml-0.5 inline align-baseline" aria-hidden />
               </a>
             ) : (
               s.source

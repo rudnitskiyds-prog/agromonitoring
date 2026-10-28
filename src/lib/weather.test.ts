@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { aggregateMonthly } from './weather';
-import type { DailyWeather } from '../types';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { aggregateMonthly, fetchArchive } from './weather';
+import type { DailyWeather, RegionConfig } from '../types';
 
 const day = (date: string, tMean: number | null, precipitation: number | null): DailyWeather => ({
   date,
@@ -40,5 +40,37 @@ describe('aggregateMonthly', () => {
 
   it('месяц без температур -> tMean null', () => {
     expect(aggregateMonthly([day('2026-10-01', null, 3)])[0].tMean).toBeNull();
+  });
+});
+
+describe('fetchArchive: фолбэк на кэш', () => {
+  const region = { id: 'saratov', name: 'Саратовская область', lat: 51.5, lon: 46, timezone: 'Europe/Saratov' } as RegionConfig;
+  const cache = {
+    source: 'Open-Meteo, архив ERA5 (CC BY 4.0)',
+    source_url: 'https://open-meteo.com/',
+    updated_at: '2026-10-27',
+    demo: false,
+    days: [day('2026-01-01', 1, 0), day('2026-01-02', 2, 1), day('2026-01-03', 3, 2)],
+  };
+  const mockFetch = () =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (String(url).includes('archive-api')) throw new Error('offline');
+        return { ok: true, json: async () => cache } as Response;
+      }),
+    );
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('диапазон внутри кэша -> origin cache и нужные дни', async () => {
+    mockFetch();
+    const r = await fetchArchive(region, '2026-01-02', '2026-01-03');
+    expect(r.origin).toBe('cache');
+    expect(r.data.map((d) => d.date)).toEqual(['2026-01-02', '2026-01-03']);
+  });
+
+  it('диапазон шире кэша -> понятная ошибка, а не пустой массив', async () => {
+    mockFetch();
+    await expect(fetchArchive(region, '2019-01-01', '2026-01-03')).rejects.toThrow(/офлайн-кэш покрывает только/);
   });
 });

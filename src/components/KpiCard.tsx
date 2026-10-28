@@ -38,13 +38,14 @@ export default function KpiCard({
   const frame = flat ? '' : 'rounded-card border border-line bg-surface p-4 sm:p-5';
   return (
     <div className={`flex flex-col ${frame} ${className}`}>
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm text-muted">{label}</p>
-        {badge}
+      {/* Бейдж справа от подписи; у md подпись резервирует две строки — числа в ряду стоят на одной линии */}
+      <div className={`flex items-start justify-between gap-2 ${size === 'md' ? 'min-h-[2.5rem]' : ''}`}>
+        <p className="min-w-0 text-sm leading-5 text-muted">{label}</p>
+        {badge && <span className="shrink-0">{badge}</span>}
       </div>
       <p
-        className={`num-display mt-2 font-semibold leading-none text-ink ${
-          size === 'lg' ? 'text-[34px] sm:text-[44px]' : 'whitespace-nowrap text-[22px]'
+        className={`num-display mt-1.5 font-semibold leading-none text-ink ${
+          size === 'lg' ? 'text-[34px] sm:text-[44px]' : 'whitespace-nowrap text-[20px]'
         }`}
       >
         {value}
