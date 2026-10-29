@@ -3,6 +3,7 @@ import type { CropPlan, DataSeries, FarmProfile, PeriodState } from '../types';
 import {
   applyWhatIf,
   applyWhatIfFarm,
+  breakevenCushion,
   computeCropEconomics,
   computeFarmEconomics,
   factorAnalysis,
@@ -280,5 +281,48 @@ describe('monthAgo', () => {
     expect(monthAgo('2025-02-28', 12)).toBe('2024-02-28');
     expect(monthAgo('2000-03-30')).toBe('2000-02-29');
     expect(monthAgo('2100-03-30')).toBe('2100-02-28');
+  });
+});
+
+describe('applyWhatIfFarm opts.only', () => {
+  const sh = { price: 0.2, yield: -0.1, diesel: 0.3 };
+  it('сдвиг только одной культуры, остальные по базе', () => {
+    const f = applyWhatIfFarm(profile, farmPrices, sh, { only: 'sunflower' });
+    expect(f.crops[0]).toEqual(computeCropEconomics(profile.crops[0], farmPrices.wheat));
+    expect(f.crops[1]).toEqual(applyWhatIf(profile.crops[1], farmPrices.sunflower, sh));
+  });
+  it('без opts — как раньше, сдвиг всех', () => {
+    const f = applyWhatIfFarm(profile, farmPrices, sh);
+    expect(f.crops[0]).toEqual(applyWhatIf(profile.crops[0], farmPrices.wheat, sh));
+  });
+  it('only на культуре не из профиля — ничего не сдвигается', () => {
+    expect(applyWhatIfFarm(profile, farmPrices, sh, { only: 'corn' })).toEqual(computeFarmEconomics(profile, farmPrices));
+  });
+});
+
+describe('breakevenCushion', () => {
+  it('ручной пример: затраты 26 200 ₽/га, 5 т/га, 15 000 ₽/т', () => {
+    const c = breakevenCushion(computeCropEconomics(plan, prices));
+    expect(c.pricePct).toBeCloseTo(((15000 - 5240) / 15000) * 100, 9); // 65,07%
+    expect(c.yieldPct).toBeCloseTo(((50 - 26200 / 15000 * 10) / 50) * 100, 9);
+    expect(c.pricePct).toBeCloseTo(c.yieldPct!, 9); // цена и урожай действуют на выручку одинаково
+  });
+  it('цена упала на запас — ровно безубыточность', () => {
+    const c = breakevenCushion(computeCropEconomics(plan, prices));
+    const e = applyWhatIf(plan, prices, { price: -c.pricePct! / 100, yield: 0, diesel: 0 });
+    expect(e.marginPerHa).toBeCloseTo(0, 6);
+  });
+  it('ниже безубыточности — отрицательный запас', () => {
+    const c = breakevenCushion(computeCropEconomics(plan, { ...prices, pricePerT: 4000 }));
+    expect(c.pricePct!).toBeLessThan(0);
+    expect(c.yieldPct!).toBeLessThan(0);
+  });
+  it('нулевая урожайность или цена → null', () => {
+    const z = breakevenCushion(computeCropEconomics({ ...plan, yieldCha: A(0) }, prices));
+    expect(z.pricePct).toBeNull();
+    expect(z.yieldPct).toBeNull();
+    const zp = breakevenCushion(computeCropEconomics(plan, { ...prices, pricePerT: 0 }));
+    expect(zp.pricePct).toBeNull();
+    expect(zp.yieldPct).toBeNull();
   });
 });

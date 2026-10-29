@@ -34,6 +34,8 @@ export default {
         'crop-barley': token('crop-barley'),
         'crop-sunflower': token('crop-sunflower'),
         'crop-corn': token('crop-corn'),
+        'series-diesel': token('series-diesel'),
+        'series-other': token('series-other'),
       },
       fontFamily: {
         display: ['Unbounded', '"Golos Text"', 'system-ui', 'sans-serif'],

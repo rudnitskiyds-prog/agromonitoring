@@ -1,6 +1,6 @@
 // Линейный график по правилам раздела 8: линии 2 px, приглушённая сетка, подпись у линии,
 // выделенная последняя точка, тултип, одна ось Y, цвет закреплён за сущностью (культурой).
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -40,6 +40,20 @@ export interface LineChartProps {
   /** Подписи по оси Y не с нуля — по умолчанию auto */
   yDomain?: [number | 'auto' | 'dataMin', number | 'auto' | 'dataMax'];
   ariaLabel?: string;
+  /**
+   * Ширина поля справа под подписи у линий, px (подписи длиннее сокращаются с «…»).
+   * По умолчанию — по длине самой длинной подписи; на узком графике (< 480 px) подписи
+   * автоматически уходят в легенду под графиком, и область построения занимает всю ширину.
+   */
+  labelWidth?: number;
+}
+
+const NARROW = 480;
+const CHAR_PX = 7.4;
+/** Подпись, умещённая в поле: «Подсолнечник» → «Подсол…» */
+function fitLabel(label: string, room: number): string {
+  const max = Math.max(3, Math.floor((room - 14) / CHAR_PX));
+  return label.length <= max ? label : `${label.slice(0, max - 1)}…`;
 }
 
 // Даты — только через formatDate из src/lib/format.ts.
@@ -72,7 +86,17 @@ export default function LineChart({
   height = 280,
   yDomain = ['auto', 'auto'],
   ariaLabel,
+  labelWidth,
 }: LineChartProps) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [boxWidth, setBoxWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => setBoxWidth(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const colors = useTokenColors({
     ...Object.fromEntries(series.map((s) => [s.id, s.colorVar])),
     __grid: '--grid',
@@ -81,7 +105,10 @@ export default function LineChart({
     __line: '--line-strong',
   } as Record<string, string>);
 
-  const labelRoom = Math.round(Math.max(...series.map((x) => x.label.length), 4) * 7.4 + 18);
+  const autoRoom = Math.round(Math.max(...series.map((x) => x.label.length), 4) * CHAR_PX + 18);
+  // Узкий экран без явной ширины — подписи в легенду под графиком
+  const legendMode = labelWidth === undefined && boxWidth !== null && boxWidth < NARROW;
+  const labelRoom = legendMode ? 14 : (labelWidth ?? autoRoom);
   const { rows, lastIndex } = useMemo(() => {
     const byDate = new Map<string, Row>();
     for (const s of series) {
@@ -110,7 +137,7 @@ export default function LineChart({
   const tickStyle = { fill: colors.__muted, fontSize: 12, fontFamily: '"Golos Text", system-ui, sans-serif' };
 
   return (
-    <div className="num w-full" role="img" aria-label={ariaLabel}>
+    <div ref={boxRef} className="num w-full" role="img" aria-label={ariaLabel}>
       <ResponsiveContainer width="100%" height={height}>
         <RLineChart data={rows} margin={{ top: 16, right: labelRoom, bottom: 4, left: 2 }}>
           <CartesianGrid vertical={false} stroke={colors.__grid} strokeWidth={1} />
@@ -163,20 +190,37 @@ export default function LineChart({
               }}
             />
           ))}
+          {!legendMode && (
           <LineEndLabels
             items={series
               .filter((x) => x.id in lastIndex)
               .map((x) => ({
                 id: x.id,
-                label: x.label,
+                label: fitLabel(x.label, labelRoom),
                 color: colors[x.id],
                 date: rows[lastIndex[x.id]].date,
                 value: rows[lastIndex[x.id]][x.id] as number,
               }))}
             halo={colors.__surface}
           />
+          )}
         </RLineChart>
       </ResponsiveContainer>
+      {legendMode && (
+        <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1.5 px-2 pb-1 text-[13px]">
+          {series
+            .filter((x) => x.id in lastIndex)
+            .map((x) => (
+              <li key={x.id} className="flex min-w-0 items-center gap-1.5">
+                <span aria-hidden className="inline-block h-0.5 w-4 shrink-0 rounded-full" style={{ background: colors[x.id] }} />
+                <span className="font-semibold" style={{ color: colors[x.id] }}>
+                  {x.label}
+                </span>
+                <span className="text-muted">{formatValue(rows[lastIndex[x.id]][x.id] as number)}</span>
+              </li>
+            ))}
+        </ul>
+      )}
     </div>
   );
 }

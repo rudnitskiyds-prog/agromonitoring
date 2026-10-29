@@ -47,6 +47,11 @@
   --crop-sunflower: 188 52 118; /* малиновый */
   --crop-corn: 106 84 182; /* фиалковый */
 
+  /* Прочие серии: солярка — «мазутный» сланцевый (низкая насыщенность, не синий ячменя);
+     «другие регионы» на сравнениях — приглушённый, уходит на второй план */
+  --series-diesel: 58 72 92;
+  --series-other: 148 150 138;
+
   --shadow-color: 40 44 30;
   --rule-alpha: 0.55; /* линовка paper-ruled — только под блоки без плотного текста */
   color-scheme: light;
@@ -81,6 +86,9 @@
   --crop-barley: 86 186 216;
   --crop-sunflower: 238 118 168;
   --crop-corn: 170 152 246;
+
+  --series-diesel: 168 184 204;
+  --series-other: 104 114 106;
 
   --shadow-color: 0 0 0;
   --rule-alpha: 0.3;
@@ -148,6 +156,58 @@
       linear-gradient(rgb(var(--grid) / 0.6) 1px, transparent 1px),
       linear-gradient(90deg, rgb(var(--grid) / 0.6) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+  /* «Хуже» на торнадо: штриховка, не статусный цвет */
+  .tornado-low {
+    background-color: rgb(var(--muted) / 0.25);
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgb(var(--muted) / 0.55) 0 2px,
+      transparent 2px 6px
+    );
+  }
+  /* Ползунок «Что если» */
+  .range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: transparent; /* дорожку и заливку рисует компонент под ползунком */
+  }
+  .range::-moz-range-track {
+    height: 6px;
+    background: transparent;
+  }
+  .range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -9px;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgb(var(--surface));
+    border: 3px solid rgb(var(--accent));
+    box-shadow: 0 1px 4px rgb(var(--shadow-color) / 0.25);
+  }
+  .range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgb(var(--surface));
+    border: 3px solid rgb(var(--accent));
+  }
+  .range:focus-visible {
+    outline: none;
+  }
+  .range:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
   }
   .link {
     @apply text-accent underline decoration-accent/40 underline-offset-[3px] hover:decoration-accent;

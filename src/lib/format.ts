@@ -139,3 +139,23 @@ export const formatDate: FormatDate = (iso, style = 'long') => {
       return d.day === null ? `${MONTHS_NOM[i]}${NBSP}${d.year}` : `${d.day}${NBSP}${MONTHS_GEN[i]}${NBSP}${d.year}`;
   }
 };
+
+export const MONTHS_PREP = [
+  'январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
+  'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре',
+] as const;
+export const WEEKDAYS_SHORT = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'] as const;
+
+/** «в марте» (предлог через неразрывный пробел). Принимает 'YYYY-MM-DD' и 'YYYY-MM'; некорректная строка → «—». */
+export function formatMonthPrepositional(iso: string): string {
+  const d = parseIsoDate(iso);
+  return d ? `в${NBSP}${MONTHS_PREP[d.month - 1]}` : '—';
+}
+
+/** «пн» … «вс». Нужна полная дата 'YYYY-MM-DD'; день недели — по календарю, без часового пояса. Иначе «—». */
+export function formatWeekdayShort(iso: string): string {
+  const d = parseIsoDate(iso);
+  if (!d || d.day === null) return '—';
+  // Date.UTC + getUTCDay — чистая календарная арифметика, локальный пояс не участвует.
+  return WEEKDAYS_SHORT[new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay()];
+}

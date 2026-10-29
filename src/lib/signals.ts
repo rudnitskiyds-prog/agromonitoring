@@ -44,7 +44,9 @@ const EMPTY_SOURCE: SourceRef = { source: '', source_url: '', updated_at: '', de
 /** Род названия культуры — для «подешевела / подешевел». */
 const CROP_FEMININE: Record<CropId, boolean> = { wheat: true, barley: false, sunflower: false, corn: true };
 /** Короткие имена для заголовков и фраз (без «на зерно»). */
-const CROP_SHORT: Record<CropId, string> = { wheat: 'Пшеница', barley: 'Ячмень', sunflower: 'Подсолнечник', corn: 'Кукуруза' };
+export const CROP_SHORT: Record<CropId, string> = { wheat: 'Пшеница', barley: 'Ячмень', sunflower: 'Подсолнечник', corn: 'Кукуруза' };
+/** «Пшеница», «Кукуруза» (без «на зерно») — для заголовков и коротких подписей. */
+export const cropShortName = (crop: CropId): string => CROP_SHORT[crop] ?? crop;
 
 const cropGen = (c: CropId) => CROPS[c]?.nameGenitive ?? c;
 const perHa = (v: number) => `${formatRub(v, { sign: true })} с${NBSP}гектара`;

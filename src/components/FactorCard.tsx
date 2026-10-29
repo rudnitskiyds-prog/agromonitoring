@@ -90,7 +90,7 @@ export default function FactorCard(props: FactorCardProps) {
           <p className="font-display text-[19px] font-semibold leading-tight text-ink">{headline ?? L_NO_RUB}</p>
         )}
         <p className="num mt-2 flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
-          <Arrow size={16} strokeWidth={2} className="text-ink/70" aria-hidden />
+          {changePct != null && <Arrow size={16} strokeWidth={2} className="text-ink/70" aria-hidden />}
           {changePct != null && <span className="font-semibold text-ink">{formatPct(changePct)}</span>}
           {changeCaption && <span>{changeCaption}</span>}
           {valueText && (

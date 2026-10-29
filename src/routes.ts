@@ -58,8 +58,8 @@ export const whyLink = (
   p: { crop?: CropId; region?: RegionId; from?: number; to?: number; factor?: 'price' | 'yield' | 'diesel' | 'otherCosts'; step?: 'indicator' | 'dynamics' | 'region' | 'factor' } = {},
 ) => withQuery(ROUTES.why.path, p);
 
-/** «Мой бизнес сегодня». period — сравнение «за месяц» или «к прошлому году». */
-export const todayLink = (p: { period?: 'month' | 'year' } = {}) => withQuery(ROUTES.today.path, p);
+/** «Мой бизнес сегодня». period — сравнение «за месяц» или «к прошлому году»; crop — культура карточек факторов. */
+export const todayLink = (p: { period?: 'month' | 'year'; crop?: CropId } = {}) => withQuery(ROUTES.today.path, p);
 
 /** Разбор query-строки из useLocation().search: строки как есть, числа — через toNumber. */
 export function readParams(search: string): { get: (k: string) => string | null; num: (k: string) => number | null } {

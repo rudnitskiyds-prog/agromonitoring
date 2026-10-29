@@ -10,6 +10,8 @@ interface CommonProps {
   /** Иконка lucide справа (например, ArrowRight) */
   iconRight?: ReactNode;
   iconLeft?: ReactNode;
+  /** Разрешить перенос длинной подписи (на телефоне): кнопка растёт в высоту */
+  wrap?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -21,7 +23,7 @@ type AsButton = CommonProps & { to?: never; href?: never } & Omit<ButtonHTMLAttr
 export type ButtonProps = AsLink | AsAnchor | AsButton;
 
 const base =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 select-none';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium [&>svg]:shrink-0 transition-colors disabled:pointer-events-none disabled:opacity-50 select-none';
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'rounded-control bg-accent text-accent-ink shadow-lift hover:bg-accent-strong active:translate-y-px',
@@ -37,8 +39,9 @@ const sizes: Record<ButtonVariant, Record<ButtonSize, string>> = {
 
 /** Кнопка: основная / второстепенная / текстовая. to → ссылка роутера, href → внешняя ссылка. */
 export default function Button(props: ButtonProps) {
-  const { variant = 'primary', size = 'md', iconLeft, iconRight, className = '', children } = props;
-  const cls = `${base} ${variants[variant]} ${sizes[variant][size]} ${className}`;
+  const { variant = 'primary', size = 'md', iconLeft, iconRight, wrap = false, className = '', children } = props;
+  const sizeCls = wrap ? sizes[variant][size].replace(/\bh-(\d+)/, 'min-h-$1 py-2') : sizes[variant][size];
+  const cls = `${base} ${variants[variant]} ${sizeCls} ${wrap ? '!whitespace-normal text-center' : ''} ${className}`;
   const inner = (
     <>
       {iconLeft}
@@ -48,7 +51,7 @@ export default function Button(props: ButtonProps) {
   );
 
   if ('to' in props && props.to !== undefined) {
-    const { to, variant: _v, size: _s, iconLeft: _l, iconRight: _r, className: _c, children: _ch, ...rest } = props;
+    const { to, variant: _v, size: _s, iconLeft: _l, iconRight: _r, wrap: _w, className: _c, children: _ch, ...rest } = props;
     return (
       <Link to={to} className={cls} {...rest}>
         {inner}
@@ -62,7 +65,7 @@ export default function Button(props: ButtonProps) {
       </a>
     );
   }
-  const { variant: _v, size: _s, iconLeft: _l, iconRight: _r, className: _c, children: _ch, to: _t, href: _h, ...rest } =
+  const { variant: _v, size: _s, iconLeft: _l, iconRight: _r, wrap: _w, className: _c, children: _ch, to: _t, href: _h, ...rest } =
     props as AsButton;
   return (
     <button type="button" className={cls} {...rest}>

@@ -49,7 +49,12 @@ export function monthAgo(isoDate: string, n = 1): string {
   const d = Number(isoDate.slice(8, 10)) || 1;
   const yy = y + Math.floor(m / 12);
   const mm = ((m % 12) + 12) % 12;
-  const leap = (yy % 4 === 0 && yy % 100 !== 0) || yy % 400 === 0;
-  const dim = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mm];
+  const dim = daysInMonth(yy, mm + 1);
   return `${yy}-${String(mm + 1).padStart(2, '0')}-${String(Math.min(d, dim)).padStart(2, '0')}`;
+}
+
+/** Дней в месяце (month 1–12), с учётом високосных лет; без Date. */
+export function daysInMonth(year: number, month: number): number {
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  return [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
 }

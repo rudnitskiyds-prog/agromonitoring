@@ -18,6 +18,8 @@ import { computeFarmEconomics } from '../lib/finance';
 import { formatNumber, formatPct, formatRub } from '../lib/format';
 import { valueAt } from '../lib/series';
 import { DEMO_FARM } from '../store/farm';
+import { buildTodayModel, factorStatus, useFarmMarket } from '../components/today/farmModel';
+import { CROPS } from '../config/regions';
 import { ROUTES } from '../routes';
 import type { CropId, DataPoint, FarmEconomics, MarketPrices, SeasonPhase, SeasonPhaseId, SourceRef } from '../types';
 
@@ -181,6 +183,91 @@ function DemoFarmTable() {
         <AssumptionBadge size="sm" />
       </div>
     </>
+  );
+}
+
+// ── Карточки факторов и KPI: тот же расчёт демо-хозяйства, что на «Мой бизнес сегодня» ──
+function DemoFarmSamples({ part }: { part: 'factors' | 'kpi' }) {
+  const { status, market } = useFarmMarket(DEMO_FARM);
+  const model = useMemo(() => (market ? buildTodayModel(DEMO_FARM, market, 'month') : null), [market]);
+  if (status === 'error') return <p className="text-sm text-muted">{texts.common.errors.load}</p>;
+  if (!model || !market) return <p className="text-sm text-muted">{texts.common.loading.calc}</p>;
+  const a = model.analyses.find((x) => x.crop === 'wheat') ?? model.analyses[0];
+  const econ = model.econ.crops.find((c) => c.crop === a?.crop);
+  const cm = market.crops.find((c) => c.plan.crop === a?.crop);
+  if (!a || !econ || !cm) return null;
+  const c = (f: 'price' | 'diesel' | 'yield') => a.contributions.find((x) => x.factor === f)!;
+  const caption = texts.today.period.month.toLowerCase();
+  const priceSrc = sourceOf(cm.data.price);
+
+  if (part === 'factors') {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <FactorCard
+          kind="price"
+          title={`${texts.factors.price.name}: ${CROPS[a.crop].name.toLowerCase()}`}
+          status={factorStatus(c('price').changePct, c('price').effectPerHa)}
+          effectRub={c('price').effectPerHa}
+          changePct={c('price').changePct}
+          changeCaption={caption}
+          valueText={formatRub(c('price').to, { unit: '₽/т' })}
+          link={ROUTES.market.path}
+          source={priceSrc}
+        />
+        <FactorCard
+          kind="diesel"
+          title={texts.factors.diesel.name}
+          status={factorStatus(c('diesel').changePct, c('diesel').effectPerHa)}
+          effectRub={c('diesel').effectPerHa}
+          changePct={c('diesel').changePct}
+          changeCaption={caption}
+          valueText={`${formatNumber(c('diesel').to, 2)}\u00a0${texts.common.units.rubPerL}`}
+          link={ROUTES.market.path}
+          source={market.sources.diesel}
+        />
+        <FactorCard
+          kind="yield"
+          title={texts.factors.yield.name}
+          status="normal"
+          effectRub={c('yield').effectPerHa}
+          changePct={c('yield').changePct ?? 0}
+          changeCaption={caption}
+          valueText={`${formatNumber(c('yield').to, 1)}\u00a0${texts.common.units.chaPerHa}`}
+          link={ROUTES.harvest.path}
+        />
+        <FactorCard
+          kind="weather"
+          title={texts.factors.weather.name}
+          status="normal"
+          effectRub={null}
+          headline={texts.factors.weather.noRub}
+          changePct={null}
+          detail={texts.today.weatherCard.lead}
+          link={ROUTES.harvest.path}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-3">
+      <KpiCard
+        size="lg"
+        label={texts.today.total.perHa(texts.today.period.monthLong, CROPS[a.crop].nameGenitive, '').replace(/\s*$/, '')}
+        value={formatRub(a.totalChangePerHa, { unit: '₽/га', sign: true })}
+        status={a.totalChangePerHa > 0 ? 'better' : a.totalChangePerHa < 0 ? 'worse' : 'normal'}
+        source={market.sources.all}
+        className="border-l-4 border-l-accent"
+      />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <KpiCard label={texts.today.total.costPerT} value={econ.costPerT === null ? '—' : formatRub(econ.costPerT, { unit: '₽/т' })} />
+        <KpiCard
+          label={texts.whatIf.breakeven.yield}
+          value={econ.breakevenYieldCha === null ? '—' : `${formatNumber(econ.breakevenYieldCha, 1)}\u00a0${texts.common.units.chaPerHa}`}
+          badge={<AssumptionBadge size="sm" />}
+        />
+        <KpiCard label={texts.common.labels.fuelShare} value={formatPct(econ.fuelSharePct, { sign: false })} />
+      </div>
+    </div>
   );
 }
 
@@ -381,75 +468,11 @@ export default function StyleguidePage() {
 
           <Section id="factors" n={6} title={S.factorCards}>
             <p className="-mt-2 mb-5 max-w-prose text-sm text-muted">{texts.today.factorsLead}</p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <FactorCard
-                kind="price"
-                title={`${texts.factors.price.name}: пшеница`}
-                status="worse"
-                effectRub={-1230}
-                changePct={-3}
-                changeCaption="за месяц"
-                valueText="14 350 ₽/т"
-                link={ROUTES.market.path}
-                source={SAMPLE_SOURCE}
-              />
-              <FactorCard
-                kind="diesel"
-                title={texts.factors.diesel.name}
-                status="worse"
-                effectRub={-620}
-                changePct={4}
-                changeCaption="за месяц"
-                valueText="68,9 ₽/л"
-                link={ROUTES.market.path}
-                source={SAMPLE_SOURCE}
-              />
-              <FactorCard
-                kind="yield"
-                title={texts.factors.yield.name}
-                status="better"
-                effectRub={2140}
-                changePct={5.2}
-                changeCaption="к плану"
-                valueText="58,4 ц/га"
-                link={ROUTES.harvest.path}
-                source={SAMPLE_SOURCE}
-              />
-              <FactorCard
-                kind="weather"
-                title={texts.factors.weather.name}
-                status="normal"
-                effectRub={null}
-                headline={texts.factors.weather.noRub}
-                changePct={null}
-                changeCaption="осадки около нормы"
-                link={ROUTES.harvest.path}
-                source={SAMPLE_SOURCE}
-              />
-            </div>
+            <DemoFarmSamples part="factors" />
           </Section>
 
           <Section id="kpi" n={7} title={S.kpi}>
-            <div className="grid gap-3">
-              <KpiCard
-                size="lg"
-                label="Прибыль с гектара пшеницы за октябрь"
-                value={formatRub(-1850, { unit: '₽/га', sign: true })}
-                status="worse"
-                hint="солярка −620 ₽/га, цена −1 230 ₽/га"
-                source={SAMPLE_SOURCE}
-                className="border-l-4 border-l-accent"
-              />
-              <div className="grid gap-3 sm:grid-cols-3">
-                <KpiCard label="Себестоимость тонны" value={formatRub(11950, { unit: '₽/т' })} hint="при 58,4 ц/га" />
-                <KpiCard
-                  label="Безубыточная урожайность"
-                  value={`${formatNumber(41.3, 1)} ц/га`}
-                  badge={<AssumptionBadge size="sm" />}
-                />
-                <KpiCard label="Доля топлива в затратах" value={formatPct(14.2, { sign: false })} hint="70 л/га" />
-              </div>
-            </div>
+            <DemoFarmSamples part="kpi" />
           </Section>
 
           <Section id="charts" n={8} title={S.charts}>

@@ -14,7 +14,7 @@ export interface KpiCardProps {
   statusLabel?: string;
   /** Бейдж рядом с подписью (AssumptionBadge, DemoBadge) */
   badge?: ReactNode;
-  source?: SourceRef;
+  source?: SourceRef | SourceRef[];
   /** lg — главный итог экрана, md — в ряду показателей */
   size?: 'lg' | 'md';
   /** flat — без рамки, для размещения внутри другого блока */

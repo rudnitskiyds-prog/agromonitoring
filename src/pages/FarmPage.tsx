@@ -175,7 +175,7 @@ export default function FarmPage() {
     if (!window.confirm(F.resetConfirm)) return;
     clearFarmProfile();
     // Форма заполняется демо-хозяйством: 800 га пшеницы + 400 га подсолнечника, Краснодар
-    setDraft(initialDraft(DEMO_FARM, true));
+    setDraft({ ...initialDraft(DEMO_FARM, true), name: '' });
     setTried({});
     setTouched({});
     setStorageFailed(false);

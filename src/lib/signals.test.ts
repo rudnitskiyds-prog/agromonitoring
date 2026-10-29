@@ -3,7 +3,7 @@ import type { DailyWeather, PeriodState, SignalContext } from '../types';
 import { ROUTES } from '../routes';
 import { DEMO_FARM } from '../store/farm';
 import { factorAnalysis } from './finance';
-import { buildSignals, detectWeatherRisks, formatDayRange, pickAdvice, RISK_SEASON_MONTHS, WEATHER_WORSE_PRIORITY } from './signals';
+import { buildSignals, cropShortName, CROP_SHORT, detectWeatherRisks, formatDayRange, pickAdvice, RISK_SEASON_MONTHS, WEATHER_WORSE_PRIORITY } from './signals';
 
 const p = (s: string) => s.replace(/ /g, ' ');
 
@@ -170,5 +170,12 @@ describe('pickAdvice', () => {
     c.analyses = [factorAnalysis(st(15000, 70, 50, 60), st(15000, 70, 50, 60), 800, 'wheat')];
     expect(pickAdvice(buildSignals(c))).toBeNull();
     expect(pickAdvice([])).toBeNull();
+  });
+});
+
+describe('cropShortName', () => {
+  it('короткие имена', () => {
+    expect(cropShortName('corn')).toBe('Кукуруза');
+    expect(CROP_SHORT.wheat).toBe('Пшеница');
   });
 });

@@ -197,18 +197,37 @@ function shiftPrices(prices: MarketPrices, s: WhatIfShifts): MarketPrices {
 export const applyWhatIf: ApplyWhatIf = (plan, prices, shifts) =>
   computeCropEconomics(shiftPlanYield(plan, shifts.yield), shiftPrices(prices, shifts));
 
-/** Экономика всего хозяйства при одинаковых сдвигах по всем культурам. */
+/**
+ * Экономика всего хозяйства при сдвигах. По умолчанию сдвиги — ко всем культурам;
+ * opts.only — только к этой культуре, остальные по базе (культуры нет в профиле — ничего не сдвигается).
+ */
 export function applyWhatIfFarm(
   profile: FarmProfile,
   prices: Partial<Record<CropId, MarketPrices>>,
   shifts: WhatIfShifts,
+  opts: { only?: CropId } = {},
 ): FarmEconomics {
   const crops: CropEconomics[] = [];
   for (const plan of profile.crops) {
     const p = prices[plan.crop];
-    if (p) crops.push(applyWhatIf(plan, p, shifts));
+    if (!p) continue;
+    const s = opts.only === undefined || opts.only === plan.crop ? shifts : NO_SHIFT;
+    crops.push(applyWhatIf(plan, p, s));
   }
   return summarizeFarm(crops);
+}
+
+/**
+ * Запас прочности: на сколько % могут упасть цена и урожайность до безубыточности
+ * (каждый фактор отдельно, остальное без изменений): (текущее − безубыточное) / текущее × 100.
+ * null — безубыточное значение null или текущее 0. Отрицательное — уже ниже безубыточности.
+ */
+export function breakevenCushion(econ: CropEconomics): { pricePct: number | null; yieldPct: number | null } {
+  const cushion = (cur: number, be: number | null) => (be === null || cur === 0 ? null : ((cur - be) / cur) * 100);
+  return {
+    pricePct: cushion(econ.pricePerT, econ.breakevenPricePerT),
+    yieldPct: cushion(econ.yieldTPerHa * 10, econ.breakevenYieldCha),
+  };
 }
 
 export const NO_SHIFT: WhatIfShifts = { price: 0, yield: 0, diesel: 0 };

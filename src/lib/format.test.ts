@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatNumber, formatPct, formatRub, parseIsoDate } from './format';
+import { formatDate, formatMonthPrepositional, formatNumber, formatPct, formatRub, formatWeekdayShort, parseIsoDate } from './format';
 
 // Для читаемости: заменяем NBSP на обычный пробел и проверяем, что обычных пробелов в исходнике нет.
 const plain = (s: string) => {
@@ -77,5 +77,23 @@ describe('formatDate', () => {
     }
     expect(plain(formatDate('2024-02-29'))).toBe('29 февраля 2024');
     expect(parseIsoDate('2025-02-29')).toBeNull();
+  });
+});
+
+describe('formatMonthPrepositional и formatWeekdayShort', () => {
+  it('«в марте», «в мае»', () => {
+    expect(plain(formatMonthPrepositional('2026-03-15'))).toBe('в марте');
+    expect(plain(formatMonthPrepositional('2026-05'))).toBe('в мае');
+    expect(plain(formatMonthPrepositional('2026-10-28'))).toBe('в октябре');
+    expect(formatMonthPrepositional('2026-13')).toBe('—');
+  });
+  it('дни недели без сдвига пояса', () => {
+    expect(formatWeekdayShort('2026-10-26')).toBe('пн');
+    expect(formatWeekdayShort('2026-10-28')).toBe('ср');
+    expect(formatWeekdayShort('2026-11-01')).toBe('вс');
+    expect(formatWeekdayShort('2026-01-01')).toBe('чт');
+    expect(formatWeekdayShort('2024-02-29')).toBe('чт');
+    expect(formatWeekdayShort('2026-10')).toBe('—');
+    expect(formatWeekdayShort('abc')).toBe('—');
   });
 });
