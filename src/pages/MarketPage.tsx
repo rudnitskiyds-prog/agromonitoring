@@ -49,7 +49,8 @@ export default function MarketPage() {
 
   // Три независимых блока: цена, солярка, ставка. Отказ одного ряда не гасит остальные.
   // Повтор — перемонтирование блока по ключу (useSeries загрузит ряд заново; ошибки загрузчик не кэширует).
-  const [retry, setRetry] = useState({ price: 0, diesel: 0, rate: 0 });
+  // Цена и пересчёт солярки зависят от рядов producer_price — повтор в любом из них перемонтирует оба.
+  const [retry, setRetry] = useState({ prices: 0, rate: 0 });
   const bump = (k: keyof typeof retry) => () => setRetry((r) => ({ ...r, [k]: r[k] + 1 }));
 
   const link = (p: { region: RegionId; crop: CropId }) => marketLink({ ...p, focus: focus === 'diesel' ? 'diesel' : undefined });
@@ -71,19 +72,19 @@ export default function MarketPage() {
       </header>
 
       <PriceArea
-        key={`price-${region}-${crop}-${retry.price}`}
+        key={`price-${region}-${crop}-${retry.prices}`}
         region={region}
         crop={crop}
         today={today}
         cropName={cropCfg.name}
-        onRetry={bump('price')}
+        onRetry={bump('prices')}
       />
       <DieselArea
-        key={`diesel-${region}-${retry.diesel}`}
+        key={`diesel-${region}-${retry.prices}`}
         region={region}
         profile={profile}
         focus={focus}
-        onRetry={bump('diesel')}
+        onRetry={bump('prices')}
       />
       <KeyRateArea key={`rate-${retry.rate}`} onRetry={bump('rate')} />
     </main>

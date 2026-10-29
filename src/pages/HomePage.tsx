@@ -5,7 +5,7 @@ import { AssumptionBadge, DemoBadge } from '../components/Badges';
 import Button from '../components/Button';
 import SeasonStrip from '../components/SeasonStrip';
 import SourceNote from '../components/SourceNote';
-import { LoadingState, Skeleton } from '../components/States';
+import { ErrorState, LoadingState, Skeleton } from '../components/States';
 import { CROPS, REGIONS } from '../config/regions';
 import { texts } from '../content/texts';
 import { loadSeries, sourceOf } from '../lib/data';
@@ -87,7 +87,13 @@ function useLiveCalc(): LiveState {
 }
 
 // ── Карточка ────────────────────────────────────────────────────────────────
+/** «Попробовать снова» — перемонтирование карточки: загрузчик не кэширует ошибки, ряды запросятся заново */
 function LiveCard() {
+  const [attempt, setAttempt] = useState(0);
+  return <LiveCardInner key={attempt} onRetry={() => setAttempt((n) => n + 1)} />;
+}
+
+function LiveCardInner({ onRetry }: { onRetry: () => void }) {
   const state = useLiveCalc();
   const region = REGIONS[DEMO_FARM.region];
   const area = DEMO_FARM.crops.reduce((s, c) => s + c.areaHa, 0);
@@ -121,13 +127,16 @@ function LiveCard() {
         )}
 
         {state.status === 'error' && (
-          <div className="mt-5">
-            <p className="font-semibold">{texts.common.errors.loadTitle}</p>
-            <p className="mt-1 text-sm text-ink/80">{L.loadFailed}</p>
-            <Button variant="text" size="sm" to={ROUTES.today.path} className="mt-2">
-              {ROUTES.today.title}
-            </Button>
-          </div>
+          <ErrorState
+            className="mt-5"
+            message={L.loadFailed}
+            onRetry={onRetry}
+            action={
+              <Button variant="text" size="sm" to={ROUTES.today.path}>
+                {ROUTES.today.title}
+              </Button>
+            }
+          />
         )}
 
         {state.status === 'ok' && <LiveCardBody calc={state.calc} areaStr={areaStr} regionShort={region?.shortName ?? ''} />}
