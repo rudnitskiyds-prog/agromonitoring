@@ -2,13 +2,14 @@
 // торнадо чувствительности, безубыточные цена и урожайность (финал сценария С2).
 import { RotateCcw } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { AssumptionBadge, DemoBadge } from '../components/Badges';
 import Button from '../components/Button';
 import Segmented from '../components/Segmented';
 import SourceNote from '../components/SourceNote';
 import StatusTag from '../components/StatusTag';
+import { ErrorState, LoadingState, Skeleton } from '../components/States';
 import TornadoChart from '../components/TornadoChart';
 import FarmHeader from '../components/today/FarmHeader';
 import { useFarmMarket } from '../components/today/farmModel';
@@ -38,10 +39,12 @@ const TOKEN = '\u0000';
 export default function WhatIfPage() {
   // Новые параметры в адресе (переход из «Рынка» и т. п.) сбрасывают ползунки: состояние берётся из query при монтировании
   const { search } = useLocation();
-  return <WhatIfBody key={search} search={search} />;
+  // «Повторить» после ошибки — тоже перемонтирование (загрузчик не кэширует ошибки)
+  const [attempt, setAttempt] = useState(0);
+  return <WhatIfBody key={`${search}#${attempt}`} search={search} onRetry={() => setAttempt((n) => n + 1)} />;
 }
 
-function WhatIfBody({ search }: { search: string }) {
+function WhatIfBody({ search, onRetry }: { search: string; onRetry: () => void }) {
   const { profile } = useFarmProfile();
   const params = readParams(search);
   const cropParam = params.get('crop') as CropId | null;
@@ -79,24 +82,45 @@ function WhatIfBody({ search }: { search: string }) {
   const tornadoNote = methodology.sections.find((x) => x.id === 'whatIf')?.paragraphs?.[0];
 
   return (
-    <main className="mx-auto max-w-page px-4 pb-16 pt-8 sm:px-6 sm:pt-10 lg:px-8">
+    <main className="mx-auto max-w-page px-4 pb-section-lg pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8">
       <FarmHeader profile={profile} />
       <h1 className="mt-4 text-[30px] leading-[1.1] sm:text-[40px]">{ROUTES.whatIf.title}</h1>
       <p className="mt-2 text-[16px] text-ink/75">{W.lead}</p>
 
-      {status === 'loading' && <p className="mt-10 text-muted">{C.loading.calc}</p>}
-      {status === 'error' && (
-        <div className="mt-10 max-w-prose rounded-card border border-line bg-surface p-5">
-          <p className="font-semibold">{C.errors.loadTitle}</p>
-          <p className="mt-1 text-sm text-ink/80">{C.errors.load}</p>
+      {status === 'loading' && (
+        <div className="mt-block-lg grid gap-block lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-section">
+          <LoadingState label={C.loading.calc}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="space-y-2 pb-3">
+                <Skeleton height={18} width="50%" />
+                <Skeleton height={28} />
+              </div>
+            ))}
+          </LoadingState>
+          <div className="space-y-block" aria-hidden>
+            <Skeleton height={260} className="rounded-sheet" />
+            <Skeleton height={320} className="rounded-sheet" />
+          </div>
         </div>
+      )}
+      {status === 'error' && (
+        <ErrorState
+          className="mt-block-lg max-w-2xl"
+          message={C.errors.loadSeries(texts.factors.price.name)}
+          onRetry={onRetry}
+          action={
+            <Link to={ROUTES.farm.path} className="link text-sm">
+              {C.actions.editFarm}
+            </Link>
+          }
+        />
       )}
 
       {market && base && scen && (
         <>
-          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-10">
+          <div className="mt-block-lg grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-10">
             {/* Ползунки */}
-            <section aria-label={W.title} className="rounded-sheet border border-line bg-surface p-5 sm:p-6 lg:sticky lg:top-6 lg:self-start">
+            <section aria-label={W.title} className="rounded-sheet border border-line bg-surface p-card sm:p-card-lg lg:sticky lg:top-6 lg:self-start">
               <h2 className="text-lg leading-tight">{W.title}</h2>
               {paramCrop && profile.crops.length > 1 && (
                 <div className="mt-3">
@@ -187,7 +211,7 @@ function WhatIfBody({ search }: { search: string }) {
 
             {/* Результат */}
             <div className="min-w-0 space-y-6">
-              <section className="rounded-sheet border border-line bg-surface p-5 sm:p-7" aria-live="polite">
+              <section className="rounded-sheet border border-line bg-surface p-card sm:p-card-lg" aria-live="polite">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-lg leading-tight sm:text-xl">{W.result.title}</h2>
                   {hasAssumptions && <AssumptionBadge size="sm" />}
@@ -241,7 +265,7 @@ function WhatIfBody({ search }: { search: string }) {
               </section>
 
               {/* Торнадо */}
-              <section className="rounded-sheet border border-line bg-surface p-5 sm:p-7">
+              <section className="rounded-sheet border border-line bg-surface p-card sm:p-card-lg">
                 <h2 className="text-lg leading-tight sm:text-xl">{W.tornado.title}</h2>
                 <p className="mt-1.5 text-[15px] text-ink/75">{W.tornado.lead(formatPct(RANGE * 100, { sign: false, fractionDigits: 0 }))}</p>
                 {tornado[0] && (

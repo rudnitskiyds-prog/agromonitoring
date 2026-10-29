@@ -1,5 +1,5 @@
 import { Menu, X } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ROUTES } from '../routes';
 import { texts } from '../content/texts';
@@ -39,9 +39,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setOpen(false), [pathname]);
+  const menuBtn = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    // Фокус — в меню; Esc закрывает и возвращает фокус на кнопку «Меню»
+    menuRef.current?.querySelector<HTMLElement>('a')?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      menuBtn.current?.focus();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
@@ -60,6 +68,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <ThemeToggle className="hidden sm:inline-flex" />
             <button
+              ref={menuBtn}
               type="button"
               className="inline-flex h-10 items-center gap-2 rounded-control border border-line-strong px-3 text-sm font-medium text-ink lg:hidden"
               aria-expanded={open}
@@ -98,6 +107,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {/* Телефон и планшет: раскрывающееся меню — каждый раздел со своим вопросом */}
         {open && (
           <nav
+            ref={menuRef}
             id="mobile-nav"
             aria-label={C.nav.mainLabel}
             className="absolute inset-x-0 top-full border-b border-line bg-surface shadow-pop lg:hidden"

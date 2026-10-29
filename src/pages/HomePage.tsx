@@ -5,6 +5,7 @@ import { AssumptionBadge, DemoBadge } from '../components/Badges';
 import Button from '../components/Button';
 import SeasonStrip from '../components/SeasonStrip';
 import SourceNote from '../components/SourceNote';
+import { LoadingState, Skeleton } from '../components/States';
 import { CROPS, REGIONS } from '../config/regions';
 import { texts } from '../content/texts';
 import { loadSeries, sourceOf } from '../lib/data';
@@ -110,11 +111,13 @@ function LiveCard() {
         </div>
 
         {state.status === 'loading' && (
-          <div className="mt-5 space-y-3" aria-busy="true">
-            <p className="text-sm text-muted">{texts.common.loading.calc}</p>
-            <div className="h-12 w-3/4 animate-pulse rounded-control bg-surface-2" />
-            <div className="h-5 w-full animate-pulse rounded-control bg-surface-2" />
-          </div>
+          <LoadingState label={texts.common.loading.calc} framed={false} className="mt-5">
+            {/* высота как у готовой карточки: число, фраза, три цифры */}
+            <Skeleton height={52} width="70%" />
+            <Skeleton height={22} />
+            <Skeleton height={22} width="80%" />
+            <Skeleton height={56} className="mt-6" />
+          </LoadingState>
         )}
 
         {state.status === 'error' && (
@@ -192,17 +195,17 @@ export default function HomePage() {
   return (
     <main>
       {/* Первый экран: высота по содержимому */}
-      <section className="mx-auto max-w-page px-4 pb-12 pt-8 sm:px-6 sm:pt-14 lg:px-8 lg:pb-16">
+      <section className="mx-auto max-w-page px-4 pb-section pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8 lg:pb-section-lg">
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
-          <div className="lg:pt-6">
+          <div className="min-w-0 lg:pt-6">
             <p className="kicker">{texts.common.appName} · {region?.name}</p>
-            <h1 className="mt-4 text-[30px] font-semibold leading-[1.1] sm:text-[42px] lg:text-[46px]">{H.hero.title}</h1>
+            <h1 className="mt-4 text-[26px] font-semibold leading-[1.12] min-[360px]:text-[30px] sm:text-[42px] lg:text-[46px]">{H.hero.title}</h1>
             <p className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-ink/80">{H.hero.subtitle}</p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <Button to={ROUTES.farm.path} iconRight={<ArrowRight size={17} aria-hidden />}>
+              <Button wrap to={ROUTES.farm.path} iconRight={<ArrowRight size={17} aria-hidden />}>
                 {H.hero.cta}
               </Button>
-              <Button variant="secondary" to={ROUTES.today.path}>
+              <Button wrap variant="secondary" to={ROUTES.today.path}>
                 {H.hero.ctaSecondary}
               </Button>
             </div>
@@ -214,7 +217,7 @@ export default function HomePage() {
       {/* Полоса сезона */}
       {phases && (
         <section className="border-y border-line bg-surface/60">
-          <div className="mx-auto max-w-page px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-page px-4 py-section sm:px-6 lg:px-8">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-14">
               <div>
                 <h2 className="text-[22px] leading-tight sm:text-[26px]">{H.seasonStrip.title}</h2>
@@ -232,7 +235,7 @@ export default function HomePage() {
       )}
 
       {/* Три преимущества */}
-      <section className="mx-auto max-w-page px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <section className="mx-auto max-w-page px-4 py-section sm:px-6 lg:px-8 lg:py-section-lg">
         <h2 className="text-[22px] leading-tight sm:text-[26px]">{H.benefits.title}</h2>
         <ol className="mt-7 grid gap-0 border-t border-line md:grid-cols-3">
           {H.benefits.items.map((b, i) => {
@@ -258,13 +261,14 @@ export default function HomePage() {
       </section>
 
       {/* Как это работает + финальный призыв */}
-      <section className="mx-auto max-w-page px-4 pb-16 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-page px-4 pb-section-lg sm:px-6 lg:px-8">
         <div className="grid overflow-hidden rounded-sheet bg-accent text-accent-ink dark:border dark:border-accent/30 dark:bg-accent-soft dark:text-ink lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <div className="p-6 sm:p-10">
+          <div className="p-card sm:p-section">
             <h2 className="text-[22px] leading-tight sm:text-[28px]">{H.finalCta.title}</h2>
             <p className="mt-3 max-w-[44ch] text-[16px] leading-relaxed opacity-90">{H.finalCta.text}</p>
             <div className="mt-6 flex flex-col gap-x-5 gap-y-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Button
+                wrap
                 to={ROUTES.farm.path}
                 className="!bg-accent-ink !text-accent hover:!opacity-90 dark:!bg-accent dark:!text-accent-ink"
                 iconRight={<ArrowRight size={17} aria-hidden />}

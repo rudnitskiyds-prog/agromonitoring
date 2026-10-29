@@ -170,7 +170,8 @@ export default function FarmPage() {
         const el =
           form?.querySelector<HTMLElement>('[aria-invalid="true"]') ??
           form?.querySelector<HTMLElement>('input[type="checkbox"]:not(:disabled)');
-        el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        el?.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
         el?.focus({ preventScroll: true });
       }, 0);
       return;
@@ -195,7 +196,7 @@ export default function FarmPage() {
   const stepTitle = [F.step1.title, F.step2.title, F.step3.title][step - 1];
 
   return (
-    <main className="mx-auto max-w-page px-4 pb-16 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+    <main className="mx-auto max-w-page px-4 pb-section-lg pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8">
       <div ref={topRef} className="scroll-mt-4" />
       <header className="max-w-3xl">
         <p className="kicker">{F.title}</p>
@@ -204,7 +205,7 @@ export default function FarmPage() {
       </header>
 
       {/* Прогресс */}
-      <nav aria-label={F.progress(String(step), String(STEPS))} className="mt-8">
+      <nav aria-label={F.progress(String(step), String(STEPS))} className="mt-block-lg">
         <p className="num text-sm font-semibold text-ink">{F.progress(String(step), String(STEPS))}</p>
         <ol className="mt-3 grid grid-cols-3 gap-2">
           {F.stepNames.map((name, i) => {
@@ -239,7 +240,7 @@ export default function FarmPage() {
         </ol>
       </nav>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
+      <div className="mt-block-lg grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
         <form
           ref={formRef}
           noValidate
@@ -420,7 +421,7 @@ export default function FarmPage() {
             </div>
           )}
 
-          <div className="mt-8 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-block-lg flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               {step > 1 && (
                 <Button variant="secondary" onClick={() => goTo(step - 1)} iconLeft={<ArrowLeft size={17} aria-hidden />} className="w-full sm:w-auto">

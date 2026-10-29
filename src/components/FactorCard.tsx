@@ -118,7 +118,7 @@ export default function FactorCard(props: FactorCardProps) {
     </>
   );
 
-  const cls = `group relative flex h-full flex-col rounded-card border border-line bg-surface p-4 sm:p-5 ${className}`;
+  const cls = `group relative flex h-full flex-col rounded-card border border-line bg-surface p-card-sm sm:p-card ${className}`;
   if (link) {
     // Ссылка на всю карточку через растянутую ссылку: внутри остаются кликабельные источники.
     return (

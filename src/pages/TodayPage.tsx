@@ -1,6 +1,6 @@
 // «Мой бизнес сегодня»: итог в рублях за период, 4 фактора, лента «Что изменилось», совет (сценарий С1).
 import { Lightbulb } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AssumptionBadge, DemoBadge } from '../components/Badges';
 import FactorCard from '../components/FactorCard';
@@ -8,6 +8,7 @@ import KpiCard from '../components/KpiCard';
 import Segmented from '../components/Segmented';
 import SourceNote from '../components/SourceNote';
 import StatusTag from '../components/StatusTag';
+import { ErrorState, LoadingState, Skeleton } from '../components/States';
 import FarmHeader from '../components/today/FarmHeader';
 import { buildTodayModel, factorStatus, mainCrop, useFarmMarket, type Period } from '../components/today/farmModel';
 import SignalList from '../components/today/SignalList';
@@ -27,6 +28,12 @@ const T = texts.today;
 const C = texts.common;
 
 export default function TodayPage() {
+  // «Повторить» после ошибки — перемонтирование: загрузчик не кэширует ошибки, ряды запросятся заново
+  const [attempt, setAttempt] = useState(0);
+  return <TodayInner key={attempt} onRetry={() => setAttempt((n) => n + 1)} />;
+}
+
+function TodayInner({ onRetry }: { onRetry: () => void }) {
   const { profile } = useFarmProfile();
   const params = readParams(useLocation().search);
   const period: Period = params.get('period') === 'year' ? 'year' : 'month';
@@ -92,7 +99,7 @@ export default function TodayPage() {
   );
 
   return (
-    <main className="mx-auto max-w-page px-4 pb-16 pt-8 sm:px-6 sm:pt-10 lg:px-8">
+    <main className="mx-auto max-w-page px-4 pb-section-lg pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8">
       <FarmHeader profile={profile} />
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -102,11 +109,47 @@ export default function TodayPage() {
         <Segmented label={T.period.label} options={periodOptions} value={period} replace={false} />
       </div>
 
-      {status === 'loading' && <p className="mt-10 text-muted">{C.loading.calc}</p>}
+      {status === 'loading' && (
+        <div className="mt-block-lg grid gap-gutter lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <LoadingState label={C.loading.calc}>
+            <Skeleton height={28} width="55%" />
+            <Skeleton height={52} width="70%" />
+            <Skeleton height={20} />
+            <Skeleton height={20} width="85%" />
+            <Skeleton height={120} />
+          </LoadingState>
+          <div className="grid grid-cols-2 gap-gutter" aria-hidden>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} height={150} className="rounded-card" />
+            ))}
+          </div>
+        </div>
+      )}
       {status === 'error' && (
-        <div className="mt-10 max-w-prose rounded-card border border-line bg-surface p-5">
-          <p className="font-semibold">{C.errors.loadTitle}</p>
-          <p className="mt-1 text-sm text-ink/80">{C.errors.load}</p>
+        <div className="mt-block-lg grid gap-gutter lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <ErrorState
+            message={C.errors.loadSeries(texts.factors.price.name)}
+            onRetry={onRetry}
+            action={
+              <Link to={ROUTES.sources.path} className="link text-sm">
+                {C.actions.toSources}
+              </Link>
+            }
+          />
+          {/* Погода от рядов цен не зависит — карточка остаётся рабочей */}
+          {region && (
+            <FactorCard
+              kind="weather"
+              title={texts.factors.weather.name}
+              status={risks.find((r) => r.status === 'worse')?.status ?? 'normal'}
+              effectRub={null}
+              headline={T.weatherCard.note}
+              changePct={null}
+              changeCaption={(risks.find((r) => r.status === 'worse') ?? risks[0])?.text ?? T.weatherCard.noRisks}
+              link={harvestLink({ region: profile.region })}
+              source={forecast.status === 'ready' ? forecast.data.source : undefined}
+            />
+          )}
         </div>
       )}
 
@@ -207,10 +250,10 @@ function TodayBody({
   return (
     <>
     {/* Телефон: итог → факторы → показатели → лента; десктоп: итог | показатели, ниже факторы и лента */}
-    <div className="mt-8 grid gap-x-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+    <div className="mt-block-lg grid gap-x-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
       {/* Итог */}
       <section className="contents">
-        <div className="relative order-1 overflow-hidden rounded-sheet border border-line bg-surface p-5 sm:p-7 lg:col-start-1 lg:row-start-1">
+        <div className="relative order-1 overflow-hidden rounded-sheet border border-line bg-surface p-card sm:p-card-lg lg:col-start-1 lg:row-start-1">
           <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-accent" />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg leading-tight sm:text-xl">{T.total.title}</h2>
@@ -236,7 +279,7 @@ function TodayBody({
           <SourceNote source={market.sources.all} className="mt-4 border-t border-line pt-3" />
         </div>
 
-        <div className="order-3 mt-8 grid grid-cols-2 content-start gap-2 sm:gap-3 lg:col-start-2 lg:row-start-1 lg:mt-0">
+        <div className="order-3 mt-block-lg grid grid-cols-2 content-start gap-2 sm:gap-3 lg:col-start-2 lg:row-start-1 lg:mt-0">
           <KpiCard
             label={T.total.profitNow}
             value={formatRub(model.econ.profit, { compact: true })}
@@ -268,7 +311,7 @@ function TodayBody({
       </section>
 
       {/* Факторы */}
-      <section className="order-2 mt-10 lg:col-span-2 lg:row-start-2 lg:mt-12">
+      <section className="order-2 mt-section lg:col-span-2 lg:row-start-2 lg:mt-section">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-[22px] leading-tight sm:text-[26px]">{T.factorsTitle}</h2>
@@ -372,7 +415,7 @@ function TodayBody({
       </section>
 
       {/* Что изменилось + совет */}
-      <section className="order-4 mt-12 grid gap-8 lg:col-span-2 lg:row-start-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-12">
+      <section className="order-4 mt-section grid gap-8 lg:col-span-2 lg:row-start-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-12">
         <div>
           <h2 className="text-[22px] leading-tight sm:text-[26px]">{T.changesTitle}</h2>
           <p className="mt-1.5 mb-5 text-[15px] text-ink/75">{T.changesLead}</p>
@@ -411,7 +454,7 @@ function TodayBody({
         </aside>
       </section>
 
-      <p className="order-5 mt-10 text-sm lg:col-span-2 lg:row-start-4">
+      <p className="order-5 mt-section text-sm lg:col-span-2 lg:row-start-4">
         <Link to={ROUTES.why.path} className="link">
           {ROUTES.why.title}
         </Link>

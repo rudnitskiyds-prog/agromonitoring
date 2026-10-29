@@ -11,6 +11,7 @@ import KpiCard from '../components/KpiCard';
 import LineChart, { type ChartSeries } from '../components/LineChart';
 import SeasonStrip, { PHASE_LABEL } from '../components/SeasonStrip';
 import SourceNote from '../components/SourceNote';
+import { EmptyState, ErrorState, LoadingState, Skeleton } from '../components/States';
 import StatusTag from '../components/StatusTag';
 import { texts } from '../content/texts';
 import { loadSeries, sourceOf } from '../lib/data';
@@ -155,8 +156,8 @@ function DemoFarmTable() {
     };
   }, []);
 
-  if (state === 'loading') return <p className="mt-3 text-sm text-muted">{texts.common.loading.calc}</p>;
-  if (state === 'error') return <p className="mt-3 text-sm text-muted">{texts.common.errors.load}</p>;
+  if (state === 'loading') return <LoadingState label={texts.common.loading.calc} framed={false} className="mt-3" />;
+  if (state === 'error') return <ErrorState className="mt-3" />;
   const { econ, sources } = state;
   const rows: Array<[string, number]> = [
     [texts.common.labels.revenue, econ.revenue],
@@ -190,8 +191,8 @@ function DemoFarmTable() {
 function DemoFarmSamples({ part }: { part: 'factors' | 'kpi' }) {
   const { status, market } = useFarmMarket(DEMO_FARM);
   const model = useMemo(() => (market ? buildTodayModel(DEMO_FARM, market, 'month') : null), [market]);
-  if (status === 'error') return <p className="text-sm text-muted">{texts.common.errors.load}</p>;
-  if (!model || !market) return <p className="text-sm text-muted">{texts.common.loading.calc}</p>;
+  if (status === 'error') return <ErrorState />;
+  if (!model || !market) return <LoadingState label={texts.common.loading.calc} />;
   const a = model.analyses.find((x) => x.crop === 'wheat') ?? model.analyses[0];
   const econ = model.econ.crops.find((c) => c.crop === a?.crop);
   const cm = market.crops.find((c) => c.plan.crop === a?.crop);
@@ -282,11 +283,12 @@ const SECTIONS = [
   ['kpi', S.kpi],
   ['charts', S.charts],
   ['season', S.seasonStrip],
+  ['states', S.states],
 ] as const;
 
 function Section({ id, n, title, children }: { id: string; n: number; title: string; children: React.ReactNode }) {
   return (
-    <section id={`sg-${id}`} className="scroll-mt-6 border-t border-line pt-8 sm:pt-10">
+    <section id={`sg-${id}`} className="scroll-mt-6 border-t border-line pt-page-top sm:pt-page-top-lg">
       <div className="mb-5 flex items-baseline gap-3 sm:mb-6">
         <span className="num text-sm font-semibold text-ochre">{String(n).padStart(2, '0')}</span>
         <h2 className="text-xl leading-tight sm:text-2xl">{title}</h2>
@@ -310,7 +312,7 @@ export default function StyleguidePage() {
   );
 
   return (
-    <main className="mx-auto max-w-page px-4 pb-16 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+    <main className="mx-auto max-w-page px-4 pb-section-lg pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8">
       <header className="max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="kicker">{T.meta}</p>
@@ -320,7 +322,7 @@ export default function StyleguidePage() {
         <p className="mt-3 max-w-prose text-[16px] leading-relaxed text-ink/80">{T.lead}</p>
       </header>
 
-      <div className="mt-10 lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-12">
+      <div className="mt-section lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-12">
         {/* Оглавление журнала */}
         <nav aria-label="Разделы витрины" className="hidden lg:block">
           <ol className="sticky top-6 space-y-2 border-l border-line pl-4 text-sm">
@@ -408,10 +410,10 @@ export default function StyleguidePage() {
 
           <Section id="buttons" n={4} title={S.buttons}>
             <div className="flex flex-wrap items-center gap-3">
-              <Button to={ROUTES.farm.path} iconRight={<ArrowRight size={17} aria-hidden />}>
+              <Button wrap to={ROUTES.farm.path} iconRight={<ArrowRight size={17} aria-hidden />}>
                 {texts.home.hero.cta}
               </Button>
-              <Button variant="secondary" to={ROUTES.today.path}>
+              <Button wrap variant="secondary" to={ROUTES.today.path}>
                 {texts.home.hero.ctaSecondary}
               </Button>
               <Button variant="text" to={ROUTES.sources.path}>
@@ -489,7 +491,7 @@ export default function StyleguidePage() {
           </Section>
 
           <Section id="season" n={9} title={S.seasonStrip}>
-            <div className="rounded-sheet border border-line bg-surface p-4 sm:p-6">
+            <div className="rounded-sheet border border-line bg-surface p-card-sm sm:p-card-lg">
               <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-[15px] font-semibold">{texts.home.seasonStrip.title}</p>
                 <p className="text-sm text-muted">
@@ -511,6 +513,16 @@ export default function StyleguidePage() {
                   </Button>
                 </p>
               )}
+            </div>
+          </Section>
+
+          <Section id="states" n={10} title={S.states}>
+            <div className="grid gap-gutter md:grid-cols-3">
+              <LoadingState label={texts.common.loading.chart}>
+                <Skeleton height={120} />
+              </LoadingState>
+              <ErrorState message={texts.common.errors.loadSeries(texts.factors.price.name)} onRetry={() => undefined} />
+              <EmptyState message={texts.common.empty.noData} />
             </div>
           </Section>
         </div>

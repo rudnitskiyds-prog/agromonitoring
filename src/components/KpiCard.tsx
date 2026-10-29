@@ -35,7 +35,7 @@ export default function KpiCard({
   flat = false,
   className = '',
 }: KpiCardProps) {
-  const frame = flat ? '' : 'rounded-card border border-line bg-surface p-4 sm:p-5';
+  const frame = flat ? '' : 'rounded-card border border-line bg-surface p-card-sm sm:p-card';
   return (
     <div className={`flex flex-col ${frame} ${className}`}>
       {/* Бейдж справа от подписи; у md подпись резервирует две строки — числа в ряду стоят на одной линии */}
