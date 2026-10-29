@@ -97,6 +97,16 @@ export default function LineChart({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  // Тултип не залипает после тапа: гасим при уходе указателя и при касании вне графика
+  const [tipOn, setTipOn] = useState(false);
+  useEffect(() => {
+    if (!tipOn) return;
+    const off = (e: PointerEvent) => {
+      if (!boxRef.current?.contains(e.target as Node)) setTipOn(false);
+    };
+    document.addEventListener('pointerdown', off);
+    return () => document.removeEventListener('pointerdown', off);
+  }, [tipOn]);
   const colors = useTokenColors({
     ...Object.fromEntries(series.map((s) => [s.id, s.colorVar])),
     __grid: '--grid',
@@ -137,7 +147,15 @@ export default function LineChart({
   const tickStyle = { fill: colors.__muted, fontSize: 12, fontFamily: '"Golos Text", system-ui, sans-serif' };
 
   return (
-    <div ref={boxRef} className="num w-full" role="img" aria-label={ariaLabel}>
+    <div
+      ref={boxRef}
+      className="num w-full"
+      role="img"
+      aria-label={ariaLabel}
+      onPointerMove={() => !tipOn && setTipOn(true)}
+      onPointerDown={() => setTipOn(true)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setTipOn(false)}
+    >
       <ResponsiveContainer width="100%" height={height}>
         <RLineChart data={rows} margin={{ top: 16, right: labelRoom, bottom: 4, left: 2 }}>
           <CartesianGrid vertical={false} stroke={colors.__grid} strokeWidth={1} />
@@ -165,6 +183,7 @@ export default function LineChart({
               <ChartTooltip {...p} series={series} colors={colors} formatValue={formatValue} formatDate={fmtTip} />
             )}
             isAnimationActive={false}
+            {...(tipOn ? {} : { active: false })}
           />
           {series.map((s) => (
             <Line

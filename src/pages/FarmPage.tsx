@@ -138,6 +138,7 @@ export default function FarmPage() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [storageFailed, setStorageFailed] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const errors = useMemo(() => validate(draft, step), [draft, step]);
   const visibleError = (key: string) => (tried[step] || touched[key] ? (errors[key] ?? null) : null);
@@ -163,6 +164,15 @@ export default function FarmPage() {
   const next = () => {
     if (Object.keys(errors).length) {
       setTried((t) => ({ ...t, [step]: true }));
+      // После отрисовки ошибок — к первому полю с ошибкой (или к выбору культур на шаге 1)
+      setTimeout(() => {
+        const form = formRef.current;
+        const el =
+          form?.querySelector<HTMLElement>('[aria-invalid="true"]') ??
+          form?.querySelector<HTMLElement>('input[type="checkbox"]:not(:disabled)');
+        el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el?.focus({ preventScroll: true });
+      }, 0);
       return;
     }
     if (step < STEPS) return goTo(step + 1);
@@ -231,6 +241,7 @@ export default function FarmPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
         <form
+          ref={formRef}
           noValidate
           onSubmit={(e) => {
             e.preventDefault();

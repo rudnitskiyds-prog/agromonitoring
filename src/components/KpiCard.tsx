@@ -45,7 +45,7 @@ export default function KpiCard({
       </div>
       <p
         className={`num-display mt-1.5 font-semibold leading-none text-ink ${
-          size === 'lg' ? 'text-[34px] sm:text-[44px]' : 'whitespace-nowrap text-[20px]'
+          size === 'lg' ? 'text-[34px] sm:text-[44px]' : 'whitespace-nowrap text-[18px] sm:text-[20px]'
         }`}
       >
         {value}

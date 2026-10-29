@@ -427,7 +427,21 @@ export const texts = {
       costPerT: 'Себестоимость тонны',
       breakeven: 'Безубыточная цена',
       seasonNote:
-        'Рублёвый эффект посчитан на весь сезон по сегодняшним ценам: так видно, сколько изменение стоит за год работы, а не только за месяц.',
+        'Суммы в рублях — на весь урожай сезона по сегодняшним ценам: столько это изменение стоит вашему хозяйству за год.',
+      // «За октябрь прибыль с гектара пшеницы −1 850 ₽: солярка +4% (−620 ₽/га), цена −3% (−1 230 ₽/га)»
+      // crop — родительный падеж; causes — строка, собранная из causePart через causesJoin
+      headline: (period: string, crop: string, rub: string, causes: string) =>
+        `За ${period} прибыль с гектара ${crop} ${rub}: ${causes}`,
+      // name в нижнем регистре: «цена», «солярка», «урожай»
+      causePart: (name: string, pct: string, rub: string) => `${name} ${pct} (${rub})`,
+      causesJoin: ', ',
+      // Ключи — FactorId из types.ts
+      causeNames: {
+        price: 'цена',
+        yield: 'урожай',
+        diesel: 'солярка',
+        otherCosts: 'затраты без солярки',
+      },
     },
     factorsTitle: 'Что именно двигало результат?',
     factorsLead: 'Нажмите на карточку, чтобы увидеть график и пересчёт в рубли на тонну.',
@@ -475,6 +489,8 @@ export const texts = {
         `Цена ${crop} на ${pct} ниже обычной для ${month}: если можете, подождите`,
       near: (crop: string, month: string) => `Цена ${crop} близка к обычной для ${month}: срочности нет`,
       toWhatIf: 'Посмотреть прибыль при такой цене',
+      whatIfAbove: 'Сколько я потеряю, если подожду, а цена вернётся к обычной?',
+      whatIfBelow: 'Сколько я получу, если цена вернётся к обычной?',
       // Подписи статуса вердикта (значок + подпись + цвет)
       labels: {
         better: 'Окно для продаж',
@@ -658,6 +674,9 @@ export const texts = {
       yieldNow: (value: string) => `сейчас ${value}`,
       costPerT: 'Себестоимость тонны',
     },
+    // month — родительный падеж: «октября»
+    fromMarketToNorm: (pct: string, month: string) =>
+      `Цена вернулась к обычной для ${month}: ${pct} к сегодняшней`,
     fromMarket: (pct: string) => `Цена подставлена из «Рынка и сезонности»: ${pct} к обычной.`,
     assumptionNote: 'Затраты в расчёте могут быть допущениями. Проверьте их в разделе «Моё хозяйство».',
     cropLabel: 'Культура',
@@ -710,7 +729,7 @@ export const texts = {
       back: 'На шаг назад',
       restart: 'Начать сначала',
       indicatorQuestion: 'Какой показатель смотрим?',
-      dynamicsQuestion: 'Как он менялся?',
+      dynamicsQuestion: 'Как менялся показатель?',
       regionQuestion: 'А как у соседей?',
       factorQuestion: 'Что стоит за этим?',
       pickHint: 'Выберите шаг, чтобы продолжить.',
@@ -721,6 +740,10 @@ export const texts = {
       other: (region: string) => region,
       russia: 'Россия в среднем',
       yieldDiff: (region: string, pct: string) => `${region}: ${pct} к прошлому периоду`,
+      selected: (region: string) => `${region} — выбранный регион`,
+      // Формулировки без падежа: region приходит в именительном
+      deeperThan: (region: string) => `${region}: урожайность просела сильнее, чем у других. Причина скорее в местных условиях.`,
+      shallowerThan: (region: string) => `${region}: урожайность просела слабее, чем у других.`,
       worseThanOthers: 'У вас просело сильнее, чем у других. Значит, причина скорее в местных условиях.',
       sameAsOthers: 'У других то же самое. Причина общая: рынок или погода на всю страну.',
       betterThanOthers: 'У вас лучше, чем у других.',

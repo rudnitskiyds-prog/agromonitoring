@@ -33,6 +33,7 @@ export interface DieselImpactProps {
   sources: SourceRef[];
   /** Выбран не регион хозяйства — рубли не считаем */
   otherRegion?: boolean;
+  className?: string;
 }
 
 function effectStatus(v: number): SignalStatus {
@@ -40,13 +41,13 @@ function effectStatus(v: number): SignalStatus {
   return v > 0 ? 'better' : 'worse';
 }
 
-export default function DieselImpact({ rows, total, changePct, changeText, priceNow, sources, otherRegion }: DieselImpactProps) {
+export default function DieselImpact({ rows, total, changePct, changeText, priceNow, sources, otherRegion, className = '' }: DieselImpactProps) {
   const Arrow = changePct == null || Math.abs(changePct) < 0.05 ? Minus : changePct > 0 ? ArrowUpRight : ArrowDownRight;
   const status = effectStatus(total);
   return (
     <section
       aria-labelledby="diesel-impact-title"
-      className="paper-ruled relative flex h-full flex-col overflow-hidden rounded-sheet border border-line bg-surface shadow-raise"
+      className={`paper-ruled relative flex h-full flex-col overflow-hidden rounded-sheet border border-line bg-surface shadow-raise ${className}`}
     >
       <span aria-hidden className="absolute inset-y-0 left-8 w-px bg-status-worse/25" />
       <div className="relative flex flex-1 flex-col py-5 pl-12 pr-5">

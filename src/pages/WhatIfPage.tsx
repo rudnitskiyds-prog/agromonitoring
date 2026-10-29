@@ -18,7 +18,8 @@ import { CROPS } from '../config/regions';
 import { methodology } from '../content/methodology';
 import { texts } from '../content/texts';
 import { applyWhatIfFarm, breakevenCushion, NO_SHIFT, sensitivity } from '../lib/finance';
-import { formatNumber, formatPct, formatRub } from '../lib/format';
+import { formatDate, formatNumber, formatPct, formatRub } from '../lib/format';
+import { numberAt } from '../lib/series';
 import { readParams, ROUTES } from '../routes';
 import type { CropEconomics, CropId, WhatIfShifts } from '../types';
 
@@ -56,6 +57,10 @@ function WhatIfBody({ search }: { search: string }) {
   const only = scope === 'crop' ? paramCrop : null;
 
   const { status, market } = useFarmMarket(profile);
+  // Месяц последней точки цены культуры — «к обычной для октября» (pricePct из «Рынка» = сдвиг до нормы)
+  const lastPrice = paramCrop ? market?.crops.find((c) => c.plan.crop === paramCrop)?.data.price : undefined;
+  const lastPriceDate = lastPrice ? numberAt(lastPrice)?.date : undefined;
+  const normMonth = lastPriceDate ? formatDate(lastPriceDate, 'monthGenitive') : null;
   const prices = market?.prices ?? null;
   const shiftFr: WhatIfShifts = { price: shifts.price / 100, yield: shifts.yield / 100, diesel: shifts.diesel / 100 };
 
@@ -114,7 +119,9 @@ function WhatIfBody({ search }: { search: string }) {
                 </p>
               )}
               {/* Плашка про отклонение одной культуры — только если пришла культура; без неё сдвиг ко всем — обычный «что если» */}
-              {fromMarketPct !== null && paramCrop && <p className="mt-3 rounded-control bg-ochre-soft px-3 py-2 text-sm">{W.fromMarket(formatPct(fromMarketPct))}</p>}
+              {fromMarketPct !== null && paramCrop && normMonth && (
+                <p className="mt-3 rounded-control bg-ochre-soft px-3 py-2 text-sm">{W.fromMarketToNorm(formatPct(fromMarketPct), normMonth)}</p>
+              )}
 
               <div className="mt-6 space-y-6">
                 <ShiftSlider

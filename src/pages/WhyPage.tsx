@@ -147,7 +147,7 @@ export default function WhyPage() {
 
       {model && data && (
         <>
-          <Summary model={model} mode={mode} />
+          <Summary model={model} mode={mode} showExample={!isC3} />
 
           <ChartFrame
             as="h2"
@@ -195,6 +195,7 @@ export default function WhyPage() {
                 from={model.from}
                 to={model.to}
                 onStep={(s) => go({ step: s }, false)}
+                own={model.fromProfile}
               />
             ) : (
               <PickFactor model={model} onSelect={selectFactor} />
@@ -235,7 +236,7 @@ function C3Card({ active }: { active: boolean }) {
 }
 
 // ── Итог ────────────────────────────────────────────────────────────────────
-function Summary({ model, mode }: { model: WhyModel; mode: WaterfallMode }) {
+function Summary({ model, mode, showExample }: { model: WhyModel; mode: WaterfallMode; showExample: boolean }) {
   const a = model.analysis;
   const total = mode === 'perHa' ? a.totalChangePerHa : a.totalChange;
   const biggest = [...a.contributions].sort((x, y) => Math.abs(y.effectPerHa) - Math.abs(x.effectPerHa))[0];
@@ -253,6 +254,11 @@ function Summary({ model, mode }: { model: WhyModel; mode: WaterfallMode }) {
         <p>{W.waterfall.summary(formatMoney(total, mode, true), a.base.label)}.</p>
         {biggest && Math.abs(biggest.effectPerHa) > 0.5 && (
           <p>{W.waterfall.biggest(FACTOR_NAME[biggest.factor], formatMoney(mode === 'perHa' ? biggest.effectPerHa : biggest.effectTotal, mode, true))}.</p>
+        )}
+        {showExample && a.totalChangePerHa > 0 && (
+          <Button variant="text" size="sm" wrap to={whyLink(C3)} iconRight={<ArrowRight size={14} aria-hidden />} className="!h-auto text-left">
+            {WP.c3Title}
+          </Button>
         )}
       </div>
     </section>

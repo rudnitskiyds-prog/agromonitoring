@@ -308,7 +308,14 @@ function Verdict(props: {
       : status === 'worse'
         ? M.verdict.below(cropGenitive, pctAbs, month)
         : M.verdict.near(cropGenitive, month);
-  const pricePct = Math.max(-30, Math.min(30, Math.round(deviationPct)));
+  // С2: «что будет, если подождать, а цена вернётся к обычной» — сдвиг от текущей цены к норме
+  const pricePct = currentPrice > 0 ? Math.max(-30, Math.min(30, Math.round((normPrice / currentPrice - 1) * 100))) : 0;
+  const whatIf =
+    status === 'better'
+      ? { to: whatIfLink({ crop, pricePct }), label: M.verdict.whatIfAbove }
+      : status === 'worse'
+        ? { to: whatIfLink({ crop, pricePct }), label: M.verdict.whatIfBelow }
+        : { to: whatIfLink({ crop }), label: M.verdict.toWhatIf };
   const monthName = formatDate(date, 'month');
 
   return (
@@ -357,12 +364,12 @@ function Verdict(props: {
         </dl>
 
         <Button
-          to={whatIfLink({ crop, pricePct })}
+          to={whatIf.to}
           wrap
           className="mt-6 w-full sm:w-auto"
           iconRight={<ArrowRight size={17} aria-hidden />}
         >
-          {M.verdict.toWhatIf}
+          {whatIf.label}
         </Button>
         <SourceNote source={sourceOf(source)} hideDemoBadge className="mt-4" />
       </div>
@@ -384,11 +391,10 @@ function DieselSection({
 }) {
   const last = numberAt(diesel);
   const before = last ? monthAgo(last.date) : null;
-  const basePoint = before ? numberAt(diesel, before) : null;
   const ch = last && before ? changePct(diesel, before, last.date) : null;
   // База «за месяц» — тот же день месяц назад, как на «Мой бизнес сегодня»
   const changeText =
-    ch == null ? '—' : basePoint ? M.dieselChart.changeMonth(formatPct(ch), formatDate(basePoint.date, 'dayMonth')) : M.dieselChart.changeMonthShort(formatPct(ch));
+    ch == null ? '—' : before ? M.dieselChart.changeMonth(formatPct(ch), formatDate(before, 'dayMonth')) : M.dieselChart.changeMonthShort(formatPct(ch));
   const changeShort = ch == null ? '—' : M.dieselChart.changeMonthShort(formatPct(ch));
 
   const series: ChartSeries[] = useMemo(
@@ -464,7 +470,9 @@ function DieselSection({
           ariaLabel={M.dieselChart.title}
         />
       </ChartFrame>
+      {/* На телефоне пересчёт в рубли — над графиком (С1: сначала рубли, потом динамика) */}
       <DieselImpact
+        className="order-first lg:order-none"
         rows={impact?.rows ?? null}
         total={impact?.total ?? 0}
         changePct={ch}

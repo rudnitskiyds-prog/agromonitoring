@@ -21,7 +21,7 @@ import { formatDate, formatNumber, formatPct, formatRub } from '../lib/format';
 import { buildSeasonalProfile, seasonalDeviation } from '../lib/seasonality';
 import { buildSignals, detectWeatherRisks, pickAdvice } from '../lib/signals';
 import { harvestLink, marketLink, readParams, ROUTES, todayLink } from '../routes';
-import type { CropId, FactorId, SeasonalDeviation, SignalContext, WeatherRisk } from '../types';
+import type { CropId, FactorAnalysis, FactorId, SeasonalDeviation, SignalContext, WeatherRisk } from '../types';
 
 const T = texts.today;
 const C = texts.common;
@@ -131,6 +131,27 @@ export default function TodayPage() {
   );
 }
 
+// Названия причин в главной фразе — в нижнем регистре
+const CAUSE_NAME: Record<FactorId, string> = T.total.causeNames;
+/** «₽/га» не разрывается переносом после «/» */
+const nb = (s: string) => s.replace('/', '/\u2060');
+
+/** С1: «За месяц прибыль с гектара пшеницы +5 944 ₽/га: цена +7% (+6 325 ₽/га), солярка +8,8% (−381 ₽/га)» */
+function headlineFor(a: FactorAnalysis, periodLong: string, cropGen: string): string {
+  const causes = a.contributions
+    .filter((c) => Math.round(c.effectPerHa) !== 0)
+    .sort((x, y) => Math.abs(y.effectPerHa) - Math.abs(x.effectPerHa))
+    .map((c) =>
+      T.total.causePart(
+        CAUSE_NAME[c.factor],
+        c.changePct === null ? '' : formatPct(c.changePct),
+        nb(formatRub(c.effectPerHa, { unit: '₽/га', sign: true })),
+      ),
+    )
+    .join(T.total.causesJoin);
+  return T.total.headline(periodLong, cropGen, nb(formatRub(a.totalChangePerHa, { unit: '₽/га', sign: true })), causes);
+}
+
 type BodyProps = {
   model: NonNullable<ReturnType<typeof buildTodayModel>>;
   market: NonNullable<ReturnType<typeof useFarmMarket>['market']>;
@@ -185,9 +206,11 @@ function TodayBody({
 
   return (
     <>
+    {/* Телефон: итог → факторы → показатели → лента; десктоп: итог | показатели, ниже факторы и лента */}
+    <div className="mt-8 grid gap-x-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
       {/* Итог */}
-      <section className="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-        <div className="relative overflow-hidden rounded-sheet border border-line bg-surface p-5 sm:p-7">
+      <section className="contents">
+        <div className="relative order-1 overflow-hidden rounded-sheet border border-line bg-surface p-5 sm:p-7 lg:col-start-1 lg:row-start-1">
           <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-accent" />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg leading-tight sm:text-xl">{T.total.title}</h2>
@@ -206,14 +229,14 @@ function TodayBody({
           </div>
           {a && crop && (
             <p className="mt-4 max-w-[46ch] text-[17px] leading-snug">
-              {T.total.perHa(periodLong, crop.nameGenitive, formatRub(a.totalChangePerHa, { unit: '₽/га', sign: true }))}
+              {headlineFor(a, periodLong, crop.nameGenitive)}
             </p>
           )}
           <p className="mt-3 max-w-prose text-xs leading-relaxed text-muted">{T.total.seasonNote}</p>
           <SourceNote source={market.sources.all} className="mt-4 border-t border-line pt-3" />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="order-3 mt-8 grid grid-cols-2 content-start gap-2 sm:gap-3 lg:col-start-2 lg:row-start-1 lg:mt-0">
           <KpiCard
             label={T.total.profitNow}
             value={formatRub(model.econ.profit, { compact: true })}
@@ -245,7 +268,7 @@ function TodayBody({
       </section>
 
       {/* Факторы */}
-      <section className="mt-12">
+      <section className="order-2 mt-10 lg:col-span-2 lg:row-start-2 lg:mt-12">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-[22px] leading-tight sm:text-[26px]">{T.factorsTitle}</h2>
@@ -349,7 +372,7 @@ function TodayBody({
       </section>
 
       {/* Что изменилось + совет */}
-      <section className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-12">
+      <section className="order-4 mt-12 grid gap-8 lg:col-span-2 lg:row-start-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-12">
         <div>
           <h2 className="text-[22px] leading-tight sm:text-[26px]">{T.changesTitle}</h2>
           <p className="mt-1.5 mb-5 text-[15px] text-ink/75">{T.changesLead}</p>
@@ -388,7 +411,7 @@ function TodayBody({
         </aside>
       </section>
 
-      <p className="mt-10 text-sm">
+      <p className="order-5 mt-10 text-sm lg:col-span-2 lg:row-start-4">
         <Link to={ROUTES.why.path} className="link">
           {ROUTES.why.title}
         </Link>
@@ -397,6 +420,7 @@ function TodayBody({
           {ROUTES.whatIf.title}
         </Link>
       </p>
+    </div>
     </>
   );
 }

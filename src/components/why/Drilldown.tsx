@@ -109,9 +109,11 @@ export interface DrilldownProps {
   from: number;
   to: number;
   onStep: (step: DrillStep) => void;
+  /** true — регион и план из профиля хозяйства: можно говорить «вы»; иначе это разбор выбранного региона */
+  own: boolean;
 }
 
-export default function Drilldown({ region, crop, factor, step, analysis, from, to, onStep }: DrilldownProps) {
+export default function Drilldown({ region, crop, factor, step, analysis, from, to, onStep, own }: DrilldownProps) {
   const steps = stepsFor(factor);
   const current = steps.includes(step) ? step : steps[0];
   const idx = steps.indexOf(current);
@@ -200,6 +202,7 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
               spec={spec}
               from={from}
               to={to}
+              own={own}
             />
           )}
           {current === 'region' && spec && (
@@ -213,6 +216,7 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
               spec={spec}
               from={from}
               to={to}
+              own={own}
             />
           )}
           {current === 'dynamics' && !spec && <p className="text-[15px] text-ink/80">{DX.otherCostsNoDynamics}</p>}
@@ -297,7 +301,9 @@ function SeriesStep({
   spec,
   from,
   to,
+  own,
 }: {
+  own: boolean;
   mode: 'dynamics' | 'region';
   factor: FactorId;
   crop: CropId;
@@ -325,13 +331,16 @@ function SeriesStep({
   }));
 
   const changes = used.map((s, i) => ({ scope: usedScopes[i], pct: changePct(s, fromDate, toDate) }));
-  const own = changes[0]?.pct ?? null;
+  const ownPct = changes[0]?.pct ?? null;
   const others = changes.slice(1).map((c) => c.pct).filter((v): v is number => v !== null);
   let verdict: string | null = null;
-  if (mode === 'region' && own !== null && others.length) {
+  if (mode === 'region' && ownPct !== null && others.length) {
     const avg = others.reduce((a, b) => a + b, 0) / others.length;
-    const diff = (own - avg) * spec.good;
-    verdict = diff < -3 ? RC.worseThanOthers : diff > 3 ? RC.betterThanOthers : RC.sameAsOthers;
+    const diff = (ownPct - avg) * spec.good;
+    if (own) verdict = diff < -3 ? RC.worseThanOthers : diff > 3 ? RC.betterThanOthers : RC.sameAsOthers;
+    else if (Math.abs(diff) <= 3) verdict = RC.sameAsOthers;
+    // «просела сильнее/слабее» — только про падение урожайности выбранного региона
+    else if (factor === 'yield' && ownPct < 0) verdict = diff < 0 ? RC.deeperThan(scopeName(region)) : RC.shallowerThan(scopeName(region));
   }
 
   const lead = changes[0]?.pct != null ? RC.yieldDiff(REGIONS[region]?.name ?? region, formatPct(changes[0].pct)) : undefined;
@@ -340,7 +349,7 @@ function SeriesStep({
   return (
     <div>
       <ChartFrame
-        question={`${FACTOR_NAME[factor]}: ${q.charAt(0).toLowerCase()}${q.slice(1)}`}
+        question={mode === 'dynamics' ? `${FACTOR_NAME[factor]}, ${scopeName(region)}` : q}
         lead={mode === 'dynamics' ? lead : verdict ?? undefined}
         unit={spec.unit}
         source={used.map(sourceOf)}
@@ -359,7 +368,7 @@ function SeriesStep({
           {changes.map((c, i) => {
             const st: SignalStatus | null =
               c.pct === null ? null : c.pct * spec.good < -3 ? 'worse' : c.pct * spec.good > 3 ? 'better' : 'normal';
-            const name = i === 0 ? RC.yours(scopeName(c.scope)) : scopeName(c.scope);
+            const name = i === 0 ? (own ? RC.yours(scopeName(c.scope)) : RC.selected(scopeName(c.scope))) : scopeName(c.scope);
             return (
               <li key={String(c.scope)} className={`rounded-card border px-3.5 py-3 ${i === 0 ? 'border-accent/50 bg-accent-soft/30' : 'border-line'}`}>
                 <p className="text-[13px] text-muted">{name}</p>
