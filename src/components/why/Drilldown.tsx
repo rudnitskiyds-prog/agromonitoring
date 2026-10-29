@@ -16,7 +16,7 @@ import LineChart, { type ChartSeries } from '../LineChart';
 import StatusTag from '../StatusTag';
 import { DRILL_STEPS, compareScopes, seasonDate, type DrillStep } from './model';
 import SeasonWeather from './SeasonWeather';
-import { formatMoney, statusOfEffect } from './Waterfall';
+import { FACTOR_NAME, formatMoney, statusOfEffect } from './Waterfall';
 
 const W = texts.why;
 const D = W.drilldown;
@@ -140,7 +140,7 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
         <div className="min-w-0">
           <p className="kicker">{D.title}</p>
           <h2 id="why-drilldown-title" className="mt-0.5 text-xl leading-tight sm:text-[22px]">
-            {FT[factor].name}
+            {FACTOR_NAME[factor]}
           </h2>
         </div>
       </div>
@@ -251,7 +251,7 @@ function IndicatorStep({ factor, analysis, spec }: { factor: FactorId; analysis:
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8">
       <div>
         <p className="max-w-prose text-[15px] leading-relaxed text-ink/80">
-          {FT[factor].short} {FT[factor].effectHint}
+          {factor === 'otherCosts' ? W.waterfall.otherCostsHint : `${FT[factor].short} ${FT[factor].effectHint}`}
         </p>
         <dl className="num mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <div>
@@ -340,7 +340,7 @@ function SeriesStep({
   return (
     <div>
       <ChartFrame
-        question={`${FT[factor].name}: ${q.charAt(0).toLowerCase()}${q.slice(1)}`}
+        question={`${FACTOR_NAME[factor]}: ${q.charAt(0).toLowerCase()}${q.slice(1)}`}
         lead={mode === 'dynamics' ? lead : verdict ?? undefined}
         unit={spec.unit}
         source={used.map(sourceOf)}

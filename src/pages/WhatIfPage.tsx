@@ -107,7 +107,8 @@ export default function WhatIfPage() {
                   {W.cropLabel}: {CROPS[paramCrop].name}
                 </p>
               )}
-              {fromMarketPct !== null && <p className="mt-3 rounded-control bg-ochre-soft px-3 py-2 text-sm">{W.fromMarket(formatPct(fromMarketPct))}</p>}
+              {/* Плашка про отклонение одной культуры — только если пришла культура; без неё сдвиг ко всем — обычный «что если» */}
+              {fromMarketPct !== null && paramCrop && <p className="mt-3 rounded-control bg-ochre-soft px-3 py-2 text-sm">{W.fromMarket(formatPct(fromMarketPct))}</p>}
 
               <div className="mt-6 space-y-6">
                 <ShiftSlider

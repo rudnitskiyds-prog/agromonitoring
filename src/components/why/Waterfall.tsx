@@ -23,11 +23,12 @@ interface Column {
 }
 
 const F = texts.factors;
-const FACTOR_NAME: Record<FactorId, string> = {
+/** Подпись фактора на странице «Почему»: вклад otherCosts — все затраты без солярки. */
+export const FACTOR_NAME: Record<FactorId, string> = {
   price: F.price.name,
   yield: F.yield.name,
   diesel: F.diesel.name,
-  otherCosts: F.otherCosts.name,
+  otherCosts: texts.why.waterfall.otherCostsLabel,
 };
 
 export const statusOfEffect = (v: number): SignalStatus => (v > 0.5 ? 'better' : v < -0.5 ? 'worse' : 'normal');

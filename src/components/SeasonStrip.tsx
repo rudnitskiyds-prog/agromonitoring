@@ -4,7 +4,7 @@
 // Правило пересечений: текущая фаза — агрономическая (сев/вегетация/уборка). «Продажи» могут идти
 // одновременно с севом или уборкой — они на своей дорожке и не перекрывают поле.
 // Дата вне агрономических фаз — «межсезонье» без активной фазы.
-import { useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { texts } from '../content/texts';
 import { formatDate, MONTHS_SHORT } from '../lib/format';
@@ -165,6 +165,18 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
     return { segs, now, months, state: seasonNow(phases, date) };
   }, [phases, date]);
 
+  // Ширина полосы: подпись фазы внутри сегмента показываем, только если она целиком помещается
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [trackW, setTrackW] = useState(0);
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => setTrackW(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [model]);
+  const fits = (text: string, widthPct: number, charPx: number) => (trackW * widthPct) / 100 >= text.length * charPx + 18;
+
   if (!model) return null;
   const { segs, now, months, state } = model;
   const nowPct = ((now + 0.5) / YEAR) * 100;
@@ -193,7 +205,7 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
         </div>
 
         {/* Дорожка 1: работы в поле */}
-        <div className="relative h-11 w-full overflow-hidden rounded-control border border-line bg-surface-2">
+        <div ref={trackRef} className="relative h-11 w-full overflow-hidden rounded-control border border-line bg-surface-2">
           {/* бороздки межсезонья видны там, где нет фаз */}
           <div
             aria-hidden
@@ -215,8 +227,8 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
                     PHASE_FILL[s.id]
                   } ${hover} ${on ? 'shadow-[inset_0_-3px_0_rgb(var(--ink))]' : ''}`}
                 >
-                  {i === 0 && (
-                    <span className={`hidden truncate text-[13px] sm:block ${on ? 'font-semibold text-ink' : 'font-medium text-ink/75'}`}>
+                  {i === 0 && fits(PHASE_LABEL[s.id], part.width, 7.6) && (
+                    <span className={`hidden whitespace-nowrap text-[13px] sm:block ${on ? 'font-semibold text-ink' : 'font-medium text-ink/75'}`}>
                       {PHASE_LABEL[s.id]}
                     </span>
                   )}
@@ -241,7 +253,9 @@ export default function SeasonStrip({ phases, date, caption, activePhase, onSele
                   activePhase === 'sales' ? 'ring-1 ring-ink' : ''
                 }`}
               >
-                {i === 0 && <span className="hidden truncate text-[11px] font-medium text-ink/75 sm:block">{S.sales}</span>}
+                {i === 0 && fits(S.sales, part.width, 6.6) && (
+                  <span className="hidden whitespace-nowrap text-[11px] font-medium text-ink/75 sm:block">{S.sales}</span>
+                )}
               </PhaseEl>
             ))}
           </div>

@@ -2,8 +2,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { DataSeries } from '../types';
+import type { SeasonMonthRow } from './climate';
 import {
+  criticalWindow,
   dataCutoff,
+  mainWeatherCause,
   growingWindow,
   incompleteMonth,
   monthlyNorm,
@@ -151,3 +154,73 @@ describe.skipIf(!existsSync(real))('сверка: Саратов, осадки 2
     expect(rows[3].incomplete).toBe(true);
   });
 });
+
+describe('criticalWindow', () => {
+  it('кубанская пшеница: май, июнь, июль', () => {
+    expect(criticalWindow('krasnodar', 'wheat', 2026)).toEqual([
+      { year: 2026, month: 5 },
+      { year: 2026, month: 6 },
+      { year: 2026, month: 7 },
+    ]);
+  });
+  it('саратовский подсолнечник: август, сентябрь, октябрь', () => {
+    expect(criticalWindow('saratov', 'sunflower', 2026).map((x) => x.month)).toEqual([8, 9, 10]);
+  });
+  it('нет календаря — июнь–август', () => {
+    expect(criticalWindow('nowhere', 'corn', 2026).map((x) => x.month)).toEqual([6, 7, 8]);
+  });
+});
+
+describe('mainWeatherCause', () => {
+  const row = (month: number, deviationPct: number | null, incomplete = false): SeasonMonthRow => ({
+    month,
+    date: `2026-${String(month).padStart(2, '0')}-01`,
+    value: 1,
+    norm: 1,
+    deviationPct,
+    diff: 0,
+    incomplete,
+  });
+  const crit = [5, 6, 7].map((month) => ({ year: 2026, month }));
+  it('берёт наибольшее |отклонение| только среди критических месяцев', () => {
+    const rows = [row(11, -90), row(5, 158), row(6, -40), row(7, 10)];
+    expect(mainWeatherCause(rows, crit)).toEqual({ month: 5, date: '2026-05-01', kind: 'wet', deviationPct: 158 });
+  });
+  it('сухой месяц', () => {
+    expect(mainWeatherCause([row(6, -65), row(7, 50)], crit)).toMatchObject({ month: 6, kind: 'dry' });
+  });
+  it('ниже порога или неполный месяц — null', () => {
+    expect(mainWeatherCause([row(5, 29), row(6, -29.9)], crit)).toBeNull();
+    expect(mainWeatherCause([row(7, -80, true)], crit)).toBeNull();
+    expect(mainWeatherCause([row(5, 29)], crit, { thresholdPct: 20 })).toMatchObject({ month: 5 });
+    expect(mainWeatherCause([row(5, null)], crit)).toBeNull();
+  });
+  it('год в окне учитывается', () => {
+    expect(mainWeatherCause([row(5, 100)], [{ year: 2025, month: 5 }])).toBeNull();
+  });
+});
+
+// Сверка на реальных рядах ERA5 (если файлы есть).
+const dataFile = (n: string) => resolve(__dirname, `../../public/data/${n}.json`);
+const load = (n: string) => JSON.parse(readFileSync(dataFile(n), 'utf8')) as DataSeries;
+describe.skipIf(!existsSync(dataFile('precipitation_saratov_month')) || !existsSync(dataFile('precipitation_krasnodar_month')))(
+  'сверка главной причины',
+  () => {
+    it('Саратов, подсолнечник, 2026 → август, dry, −65%', () => {
+      const s = load('precipitation_saratov_month');
+      const crit = criticalWindow('saratov', 'sunflower', 2026);
+      const c = mainWeatherCause(monthRows(s, crit, normYearsOf(s)), crit)!;
+      expect(c).toMatchObject({ month: 8, kind: 'dry' });
+      expect(Math.round(c.deviationPct)).toBe(-65);
+    });
+    it('Краснодар, пшеница, 2026 → май, wet, около +158%', () => {
+      const s = load('precipitation_krasnodar_month');
+      const crit = criticalWindow('krasnodar', 'wheat', 2026);
+      // Окно вегетации включает сухой ноябрь 2025, но он вне критического окна.
+      const c = mainWeatherCause(monthRows(s, growingWindow('krasnodar', 'wheat', 2026), normYearsOf(s)), crit)!;
+      expect(c).toMatchObject({ month: 5, kind: 'wet' });
+      expect(c.deviationPct).toBeGreaterThan(140);
+      expect(c.deviationPct).toBeLessThan(175);
+    });
+  },
+);

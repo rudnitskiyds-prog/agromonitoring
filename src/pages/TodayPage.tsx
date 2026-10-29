@@ -99,7 +99,7 @@ export default function TodayPage() {
           <h1 className="text-[30px] leading-[1.1] sm:text-[40px]">{ROUTES.today.title}</h1>
           <p className="mt-2 text-[16px] text-ink/75">{T.title}</p>
         </div>
-        <Segmented label={T.period.label} options={periodOptions} value={period} />
+        <Segmented label={T.period.label} options={periodOptions} value={period} replace={false} />
       </div>
 
       {status === 'loading' && <p className="mt-10 text-muted">{C.loading.calc}</p>}
@@ -122,6 +122,7 @@ export default function TodayPage() {
           hasAssumptions={hasAssumptions}
           risks={risks}
           forecastSource={forecast.status === 'ready' ? forecast.data.source : null}
+          forecastFromCache={forecast.status === 'ready' && forecast.data.origin === 'cache'}
           signals={signals}
           advice={advice}
         />
@@ -141,6 +142,7 @@ type BodyProps = {
   hasAssumptions: boolean;
   risks: WeatherRisk[];
   forecastSource: import('../types').SourceRef | null;
+  forecastFromCache: boolean;
   signals: ReturnType<typeof buildSignals>;
   advice: ReturnType<typeof pickAdvice>;
 };
@@ -156,6 +158,7 @@ function TodayBody({
   hasAssumptions,
   risks,
   forecastSource,
+  forecastFromCache,
   signals,
   advice,
 }: BodyProps) {
@@ -319,7 +322,15 @@ function TodayBody({
               headline={T.weatherCard.note}
               changePct={null}
               changeCaption={worstRisk ? worstRisk.text : T.weatherCard.noRisks}
-              detail={T.weatherCard.lead}
+              detail={
+                forecastFromCache && forecastSource ? (
+                  <span className="block rounded-control bg-status-normal-bg px-2.5 py-1.5 text-[13px] text-ink">
+                    {C.weather.cacheNotice(formatDate(forecastSource.updated_at, 'long'))}
+                  </span>
+                ) : (
+                  T.weatherCard.lead
+                )
+              }
               link={harvestLink({ crop: a.crop, region: profile.region })}
               source={forecastSource ?? undefined}
             />

@@ -15,10 +15,20 @@ export interface SegmentedProps<T extends string> {
   value: T;
   onSelect?: (id: T) => void;
   size?: 'md' | 'sm';
+  /** Ссылки заменяют запись истории (по умолчанию). false — «назад» вернёт прежний вариант */
+  replace?: boolean;
   className?: string;
 }
 
-export default function Segmented<T extends string>({ label, options, value, onSelect, size = 'md', className = '' }: SegmentedProps<T>) {
+export default function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onSelect,
+  size = 'md',
+  replace = true,
+  className = '',
+}: SegmentedProps<T>) {
   const item = size === 'md' ? 'h-9 px-3.5 text-sm' : 'h-8 px-3 text-[13px]';
   return (
     <div role="group" aria-label={label} className={`inline-flex max-w-full flex-wrap rounded-control border border-line bg-surface-2/60 p-0.5 ${className}`}>
@@ -28,7 +38,7 @@ export default function Segmented<T extends string>({ label, options, value, onS
           on ? 'bg-surface text-ink shadow-lift' : 'text-muted hover:text-ink'
         }`;
         return o.to ? (
-          <Link key={o.id} to={o.to} replace aria-current={on ? 'true' : undefined} className={cls}>
+          <Link key={o.id} to={o.to} replace={replace} aria-current={on ? 'true' : undefined} className={cls}>
             {o.label}
           </Link>
         ) : (

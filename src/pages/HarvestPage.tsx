@@ -11,7 +11,6 @@ import RainLedger from '../components/harvest/RainLedger';
 import YearMiniChart from '../components/harvest/YearMiniChart';
 import { ErrorBlock, LoadingBlock } from '../components/market/LoadState';
 import PagePicker from '../components/market/PagePicker';
-import { phaseMonths } from '../components/market/phaseMonths';
 import { useSelection } from '../components/market/useSelection';
 import { useFarmProfile } from '../components/useFarmProfile';
 import { CROPS, REGIONS } from '../config/regions';
@@ -20,7 +19,7 @@ import { useForecast, useSeriesList } from '../hooks/useData';
 import { sourceOf } from '../lib/data';
 import { formatDate, formatNumber, formatPct } from '../lib/format';
 import { detectWeatherRisks } from '../lib/signals';
-import { normOfYears, normYearsOf, seasonByYear, seasonMonthRows } from '../lib/climate';
+import { criticalWindow, mainWeatherCause, normOfYears, normYearsOf, seasonByYear, seasonMonthRows } from '../lib/climate';
 import { changePct, validPoints } from '../lib/series';
 import { harvestLink, whyLink } from '../routes';
 import type { CropId, DataSeries, RegionId, SeriesKey } from '../types';
@@ -71,7 +70,7 @@ export default function HarvestPage() {
       {data.status === 'ready' && (
         <HistoryBlocks
           crop={crop}
-          grainFillMonths={grainFill(region, crop)}
+          region={region}
           yieldS={data.data[0]}
           rain={data.data[1]}
           temp={data.data[2]}
@@ -87,24 +86,16 @@ export default function HarvestPage() {
 }
 
 // ── Урожай и погода сезона по годам ─────────────────────────────────────────
-/** Налив и созревание: месяц перед уборкой и месяцы уборки — из календаря культуры в регионе. */
-function grainFill(region: RegionId, crop: CropId): number[] | undefined {
-  const h = REGIONS[region]?.season[crop]?.find((p) => p.id === 'harvest');
-  if (!h) return undefined;
-  const ms = phaseMonths(h);
-  return [((ms[0] + 10) % 12) + 1, ...ms];
-}
-
 function HistoryBlocks({
   crop,
-  grainFillMonths,
+  region,
   yieldS,
   rain,
   temp,
   active,
 }: {
   crop: CropId;
-  grainFillMonths?: number[];
+  region: RegionId;
   yieldS: DataSeries;
   rain: DataSeries;
   temp: DataSeries;
@@ -121,6 +112,9 @@ function HistoryBlocks({
     const lastYear = Math.max(...allYears);
     const years = Array.from({ length: lastYear - first + 1 }, (_, i) => first + i);
     const range = normYearsOf(rain);
+    const rainRows = seasonMonthRows(rain, lastYear, undefined, range);
+    // Критическое окно: месяц перед уборкой и уборка — по календарю культуры в регионе
+    const critical = criticalWindow(region, crop, lastYear);
     const lastY = yPts[yPts.length - 1];
     const prevY = yPts[yPts.length - 2];
     const yoy = lastY && prevY ? changePct(yieldS, prevY.date, lastY.date) : null;
@@ -145,9 +139,11 @@ function HistoryBlocks({
         temp: normOfYears(tempY, range),
         active: normOfYears(activeY, range),
       },
-      rainRows: seasonMonthRows(rain, lastYear, undefined, range),
+      rainRows,
+      critical,
+      cause: mainWeatherCause(rainRows, critical),
     };
-  }, [yieldS, rain, temp, active]);
+  }, [yieldS, rain, temp, active, region, crop]);
 
   const { range } = model;
   const norm = Y.normRange(String(range.from), String(range.to));
@@ -222,7 +218,7 @@ function HistoryBlocks({
       </ChartFrame>
 
       <div className="mt-6">
-        <RainLedger rows={model.rainRows} year={model.lastYear} range={range} dataTo={rain.updated_at} source={weatherSrc} grainFillMonths={grainFillMonths} />
+        <RainLedger rows={model.rainRows} year={model.lastYear} range={range} dataTo={rain.updated_at} source={weatherSrc} critical={model.critical} cause={model.cause} />
       </div>
     </>
   );

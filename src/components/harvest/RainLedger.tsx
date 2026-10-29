@@ -1,19 +1,17 @@
 // «Сколько дождя выпало по месяцам сезона» — строки журнала: факт против нормы.
 // Неполный месяц (ERA5 ещё не закрыл его) показан штриховкой и с нормой не сравнивается.
-import { TriangleAlert } from 'lucide-react';
+import { CircleMinus, CloudRain, TriangleAlert } from 'lucide-react';
 import { texts } from '../../content/texts';
 import { MONTHS_NOM, formatDate, formatNumber, formatPct } from '../../lib/format';
 import type { SourceRef } from '../../types';
 import SourceNote from '../SourceNote';
 import StatusTag from '../StatusTag';
-import type { SeasonMonthRow, YearRange } from '../../lib/climate';
+import type { SeasonMonthRow, WeatherCause, YearMonth, YearRange } from '../../lib/climate';
 
 const F = texts.why.factorCause;
 const L = texts.harvest.rainLedger;
 /** Месяц считаем сухим, если осадков меньше нормы больше чем на треть. */
 const DRY_PCT = -30;
-/** Налив и созревание по умолчанию — июль–сентябрь; страница передаёт месяцы из календаря культуры. */
-const GRAIN_FILL = [7, 8, 9];
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const mm = (v: number) => formatNumber(v, 0);
@@ -26,17 +24,19 @@ export interface RainLedgerProps {
   /** Последний учтённый день ERA5 */
   dataTo: string;
   source: SourceRef;
-  /** Месяцы налива и созревания культуры (месяц перед уборкой + уборка) */
-  grainFillMonths?: number[];
+  /** Критическое окно: месяц перед уборкой и уборка (criticalWindow из lib/climate) */
+  critical: YearMonth[];
+  /** Главная погодная причина в критическом окне (mainWeatherCause); null — явной нет */
+  cause: WeatherCause | null;
 }
 
-export default function RainLedger({ rows, year, range, dataTo, source, grainFillMonths = GRAIN_FILL }: RainLedgerProps) {
+export default function RainLedger({ rows, year, range, dataTo, source, critical, cause }: RainLedgerProps) {
   const scale = Math.max(1, ...rows.flatMap((r) => [r.value ?? 0, r.norm ?? 0]));
   const from = String(range.from);
   const to = String(range.to);
-  const driest = rows
-    .filter((r) => grainFillMonths.includes(r.month) && r.deviationPct !== null && r.deviationPct <= DRY_PCT)
-    .sort((a, b) => (a.deviationPct ?? 0) - (b.deviationPct ?? 0))[0];
+  const criticalKeys = new Set(critical.map((c) => `${c.year}-${String(c.month).padStart(2, '0')}-01`));
+  const causeMonth = cause ? MONTHS_NOM[cause.month - 1] : '';
+  const causePct = cause ? pctAbs(cause.deviationPct) : '';
 
   return (
     <section aria-labelledby="rain-ledger-title" className="rounded-card border border-line bg-surface">
@@ -49,6 +49,10 @@ export default function RainLedger({ rows, year, range, dataTo, source, grainFil
           <li className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-4 rounded-[2px] bg-accent" />
             {L.legendFact}
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="inline-block h-3.5 w-1 rounded-full bg-ochre" />
+            {L.legendGrainFill}
           </li>
           <li className="flex items-center gap-2">
             <span className="inline-block h-3.5 w-0.5 bg-ink" />
@@ -66,9 +70,14 @@ export default function RainLedger({ rows, year, range, dataTo, source, grainFil
           else if (r.value === null || r.norm === null) phrase = `${name}: —`;
           else if ((r.deviationPct ?? 0) < 0) phrase = F.rainMonthBelow(name, mm(r.value), mm(r.norm), pctAbs(r.deviationPct ?? 0));
           else phrase = F.rainMonthAbove(name, mm(r.value), mm(r.norm), pctAbs(r.deviationPct ?? 0));
+          const isCritical = criticalKeys.has(r.date);
           return (
             <li
               key={r.month}
+              className={`relative ${isCritical ? 'bg-ochre-soft/40' : ''}`}
+            >
+              {isCritical && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-ochre" />}
+              <div
               className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 px-4 py-3 sm:grid-cols-[6rem_minmax(0,1fr)_minmax(0,1.25fr)] sm:px-6"
             >
               <span className="text-sm font-semibold">{name}</span>
@@ -103,17 +112,28 @@ export default function RainLedger({ rows, year, range, dataTo, source, grainFil
                   </span>
                 )}
               </p>
+              </div>
             </li>
           );
         })}
       </ol>
 
-      {driest && (
-        <p className="flex items-start gap-2.5 px-4 py-4 text-[15px] leading-snug sm:px-6">
-          <TriangleAlert size={18} className="mt-0.5 shrink-0 text-status-worse" aria-hidden />
-          <span>{F.dryGrainFill(MONTHS_NOM[driest.month - 1])}</span>
-        </p>
-      )}
+      <p className="flex items-start gap-2.5 px-4 py-4 text-[15px] leading-snug sm:px-6">
+        {cause?.kind === 'dry' ? (
+          <TriangleAlert size={18} className="mt-0.5 shrink-0 text-ink" aria-hidden />
+        ) : cause?.kind === 'wet' ? (
+          <CloudRain size={18} className="mt-0.5 shrink-0 text-ink" aria-hidden />
+        ) : (
+          <CircleMinus size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+        )}
+        <span>
+          {cause?.kind === 'dry'
+            ? F.mainDry(causeMonth, causePct)
+            : cause?.kind === 'wet'
+              ? F.mainWet(causeMonth, causePct)
+              : F.noMainCause}
+        </span>
+      </p>
       <p className="px-4 pb-3 text-xs text-muted sm:px-6">
         {L.dryHint(formatPct(Math.abs(DRY_PCT), { sign: false, fractionDigits: 0 }))} {L.dataTo(formatDate(dataTo, 'long'))}.
       </p>

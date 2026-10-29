@@ -386,8 +386,10 @@ function DieselSection({
   const before = last ? monthAgo(last.date) : null;
   const basePoint = before ? numberAt(diesel, before) : null;
   const ch = last && before ? changePct(diesel, before, last.date) : null;
-  const weeks = last && basePoint ? Math.round((Date.parse(last.date) - Date.parse(basePoint.date)) / (7 * 864e5)) : 0;
-  const changeText = ch == null ? '—' : M.dieselChart.change(formatPct(ch), String(weeks));
+  // База «за месяц» — тот же день месяц назад, как на «Мой бизнес сегодня»
+  const changeText =
+    ch == null ? '—' : basePoint ? M.dieselChart.changeMonth(formatPct(ch), formatDate(basePoint.date, 'dayMonth')) : M.dieselChart.changeMonthShort(formatPct(ch));
+  const changeShort = ch == null ? '—' : M.dieselChart.changeMonthShort(formatPct(ch));
 
   const series: ChartSeries[] = useMemo(
     () => [{ id: 'diesel', label: texts.factors.diesel.name, colorVar: '--series-diesel', points: validPoints(diesel.series).slice(-52) }],
@@ -443,7 +445,7 @@ function DieselSection({
             {M.dieselChart.lead} <span className="num font-semibold text-ink">{changeText}</span>
             {mainRow && (
               <>
-                {' '}
+                {'. '}
                 {M.dieselChart.fuelShare(formatPct(mainRow.fuelSharePct, { sign: false, fractionDigits: 0 }))} (
                 {CROPS[mainRow.crop].name.toLowerCase()}).
               </>
@@ -466,7 +468,7 @@ function DieselSection({
         rows={impact?.rows ?? null}
         total={impact?.total ?? 0}
         changePct={ch}
-        changeText={changeText}
+        changeText={changeShort}
         priceNow={last?.value ?? 0}
         otherRegion={region !== profile.region}
         sources={[sourceOf(diesel), ...(farmData ? farmData.slice(1, 1 + profile.crops.length).map(sourceOf) : [])]}

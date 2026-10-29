@@ -179,3 +179,62 @@ export function growingWindow(region: RegionId, crop: CropId, year: number): Yea
   }
   return out;
 }
+
+/**
+ * Критическое окно — месяцы, когда погода сильнее всего бьёт по урожаю (налив и созревание):
+ * месяц перед началом уборки + месяцы уборки по REGIONS[region].season[crop].
+ * Кубанская пшеница (уборка 15.06–31.07) → май, июнь, июль; саратовский подсолнечник → август–октябрь.
+ * Год `year` — год начала уборки. Нет календаря — июнь–август `year`.
+ */
+export function criticalWindow(region: RegionId, crop: CropId, year: number): YearMonth[] {
+  const harvest = REGIONS[region]?.season?.[crop]?.find((p) => p.id === 'harvest');
+  if (!harvest) return [6, 7, 8].map((month) => ({ year, month }));
+  const startM = Number(harvest.from.slice(0, 2));
+  const endM = Number(harvest.to.slice(0, 2));
+  const out: YearMonth[] = [startM === 1 ? { year: year - 1, month: 12 } : { year, month: startM - 1 }];
+  let y = year;
+  let m = startM;
+  for (let guard = 0; guard < 12; guard++) {
+    out.push({ year: y, month: m });
+    if (m === endM) break;
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+export interface WeatherCause {
+  month: number;
+  /** 'YYYY-MM-01' */
+  date: string;
+  /** dry — осадков меньше нормы, wet — больше */
+  kind: 'dry' | 'wet';
+  deviationPct: number;
+}
+
+export const MAIN_CAUSE_THRESHOLD_PCT = 30;
+
+/**
+ * Главная погодная причина: среди месяцев критического окна (без неполных) — месяц с наибольшим
+ * |отклонением осадков от нормы|, если оно не меньше порога (по умолчанию 30%).
+ * null — «погода сезона не объясняет» изменение урожая.
+ */
+export function mainWeatherCause(
+  rows: SeasonMonthRow[],
+  critical: YearMonth[],
+  opts: { thresholdPct?: number } = {},
+): WeatherCause | null {
+  const threshold = opts.thresholdPct ?? MAIN_CAUSE_THRESHOLD_PCT;
+  const keys = new Set(critical.map((c) => monthKey(c.year, c.month)));
+  let best: SeasonMonthRow | null = null;
+  for (const r of rows) {
+    if (r.incomplete || r.deviationPct === null || !keys.has(r.date)) continue;
+    if (Math.abs(r.deviationPct) < threshold) continue;
+    if (!best || Math.abs(r.deviationPct) > Math.abs(best.deviationPct as number)) best = r;
+  }
+  if (!best || best.deviationPct === null) return null;
+  return { month: best.month, date: best.date, kind: best.deviationPct < 0 ? 'dry' : 'wet', deviationPct: best.deviationPct };
+}

@@ -12,7 +12,7 @@ import StatusTag from '../components/StatusTag';
 import { useFarmProfile } from '../components/useFarmProfile';
 import Drilldown from '../components/why/Drilldown';
 import PeriodPicker from '../components/why/PeriodPicker';
-import Waterfall, { formatMoney, statusOfEffect, type WaterfallMode } from '../components/why/Waterfall';
+import Waterfall, { FACTOR_NAME, formatMoney, statusOfEffect, type WaterfallMode } from '../components/why/Waterfall';
 import { EXAMPLE_AREA_HA, availableYears, buildModel, planFor, readSelection, type DrillStep, type WhyModel } from '../components/why/model';
 import { CROPS } from '../config/regions';
 import { texts } from '../content/texts';
@@ -23,7 +23,6 @@ import { whyLink } from '../routes';
 import type { CropId, FactorId, MarketData, RegionId } from '../types';
 
 const W = texts.why;
-const FT = texts.factors;
 
 const WP = W.page;
 
@@ -253,7 +252,7 @@ function Summary({ model, mode }: { model: WhyModel; mode: WaterfallMode }) {
         <StatusTag status={status} />
         <p>{W.waterfall.summary(formatMoney(total, mode, true), a.base.label)}.</p>
         {biggest && Math.abs(biggest.effectPerHa) > 0.5 && (
-          <p>{W.waterfall.biggest(FT[biggest.factor].name, formatMoney(mode === 'perHa' ? biggest.effectPerHa : biggest.effectTotal, mode, true))}.</p>
+          <p>{W.waterfall.biggest(FACTOR_NAME[biggest.factor], formatMoney(mode === 'perHa' ? biggest.effectPerHa : biggest.effectTotal, mode, true))}.</p>
         )}
       </div>
     </section>
@@ -314,7 +313,7 @@ function FactorTable({
                     on ? 'bg-accent-soft/40' : ''
                   }`}
                 >
-                  <span className={`pl-2 font-medium ${on ? 'text-accent' : 'text-ink'}`}>{FT[c.factor].name}</span>
+                  <span className={`pl-2 font-medium ${on ? 'text-accent' : 'text-ink'}`}>{FACTOR_NAME[c.factor]}</span>
                   <span className="text-right text-ink/80">{FACTOR_FMT[c.factor](c.from)}</span>
                   <span className="text-right text-ink/80">{FACTOR_FMT[c.factor](c.to)}</span>
                   <span className="text-right">{c.changePct === null ? '—' : formatPct(c.changePct)}</span>
@@ -342,7 +341,7 @@ function FactorTable({
                 className={`w-full rounded-card border px-3.5 py-3 text-left ${on ? 'border-accent bg-accent-soft/40' : 'border-line bg-surface'}`}
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{FT[c.factor].name}</span>
+                  <span className="font-medium">{FACTOR_NAME[c.factor]}</span>
                   <StatusTag status={statusOfEffect(c.effectPerHa)} size="sm" />
                 </span>
                 <span className="mt-1 block text-[13px] text-ink/75">
@@ -370,7 +369,7 @@ function PickFactor({ model, onSelect }: { model: WhyModel; onSelect: (f: Factor
       <div className="mt-4 flex flex-wrap gap-2">
         {model.analysis.contributions.map((c) => (
           <Button key={c.factor} variant="secondary" size="sm" onClick={() => onSelect(c.factor)}>
-            {FT[c.factor].name}
+            {FACTOR_NAME[c.factor]}
           </Button>
         ))}
       </div>

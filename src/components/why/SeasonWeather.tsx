@@ -2,7 +2,7 @@
 // Расчёт норм, отклонений и неполного месяца — src/lib/climate.ts; здесь только вывод.
 import { CloudRain, Thermometer } from 'lucide-react';
 import { texts } from '../../content/texts';
-import { dataCutoff, growingWindow, monthRows, normYearsOf } from '../../lib/climate';
+import { criticalWindow, dataCutoff, growingWindow, mainWeatherCause, monthRows, normYearsOf } from '../../lib/climate';
 import { sourceOf } from '../../lib/data';
 import { MONTHS_NOM, formatDate, formatNumber, formatPct } from '../../lib/format';
 import type { CropId, DataSeries, RegionId, SignalStatus } from '../../types';
@@ -59,9 +59,17 @@ export default function SeasonWeather({ region, crop, year, precipitation, tempe
 
   if (!rows.length) return <p className="text-[15px] text-ink/80">{FC.noWeather}</p>;
 
-  const main = rows
-    .filter((r) => r.devPct !== null && r.devPct <= -30)
-    .sort((a, b) => (a.devPct ?? 0) - (b.devPct ?? 0))[0];
+  // Главная причина — только по критическим месяцам культуры (налив и уборка), правило — в lib/climate
+  const critical = criticalWindow(region, crop, year);
+  const criticalKeys = new Set(critical.map((c) => `${c.year}-${String(c.month).padStart(2, '0')}`));
+  const cause = mainWeatherCause(rain, critical);
+  const main = cause ? rows.find((r) => r.key === cause.date.slice(0, 7)) : undefined;
+  const causeText = cause
+    ? (cause.kind === 'dry' ? FC.mainDry : FC.mainWet)(
+        MONTHS_NOM[cause.month - 1],
+        formatPct(Math.abs(cause.deviationPct), { sign: false, fractionDigits: 0 }),
+      )
+    : FC.noMainCause;
   const scale = Math.max(...rows.map((r) => Math.max(r.mm, r.normMm)), 1);
   const statusOf = (r: MonthRow): { status: SignalStatus | null; label: string } => {
     if (r.incomplete || r.devPct === null) return { status: null, label: T_SW.incomplete };
@@ -83,12 +91,14 @@ export default function SeasonWeather({ region, crop, year, precipitation, tempe
 
   return (
     <div>
-      {main && (
+      {main ? (
         <div className="relative overflow-hidden rounded-card border border-status-worse/40 bg-status-worse-bg/60 px-4 py-4 sm:px-5">
-          <StatusTag status="worse" label={T_SW.mainCause} />
+          <StatusTag status="worse" label={cause?.kind === 'wet' ? T_SW.mainCauseWet : T_SW.mainCauseDry} />
           <p className="mt-2.5 text-[17px] font-semibold leading-snug text-ink sm:text-lg">{sentence(main)}</p>
-          <p className="mt-1.5 max-w-prose text-[15px] leading-snug text-ink/80">{FC.dryGrainFill(MONTHS_NOM[main.month - 1])}</p>
+          <p className="mt-1.5 max-w-prose text-[15px] leading-snug text-ink/80">{causeText}</p>
         </div>
+      ) : (
+        <p className="rounded-card border border-line bg-bg/60 px-4 py-3 text-[15px] text-ink/80">{causeText}</p>
       )}
 
       <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
@@ -100,17 +110,22 @@ export default function SeasonWeather({ region, crop, year, precipitation, tempe
           <p className="text-xs text-muted">{T_SW.normBasis(String(normRange.from), String(normRange.to))}</p>
         )}
       </div>
+      <p className="mt-1.5 flex items-center gap-2 text-xs text-muted">
+        <span aria-hidden className="inline-block h-3 w-3 shrink-0 border-l-2 border-l-ochre bg-ochre-soft/60" />
+        {T_SW.criticalLegend}
+      </p>
 
       <ol className="num mt-2 divide-y divide-line border-y border-line">
         {rows.map((r) => {
           const st = statusOf(r);
           const isMain = main?.key === r.key;
+          const isCritical = criticalKeys.has(r.key);
           return (
             <li
               key={r.key}
               className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 py-2.5 sm:grid-cols-[120px_minmax(0,1fr)_150px_170px] ${
-                isMain ? 'bg-status-worse-bg/35' : ''
-              }`}
+                isMain ? 'bg-status-worse-bg/35' : isCritical ? 'bg-ochre-soft/30' : ''
+              } ${isCritical ? 'border-l-2 border-l-ochre' : 'border-l-2 border-l-transparent'}`}
             >
               <span className={`text-[14px] ${isMain ? 'font-semibold' : 'font-medium'} text-ink sm:pl-2`}>{r.name}</span>
               {/* бар: факт и метка нормы */}
