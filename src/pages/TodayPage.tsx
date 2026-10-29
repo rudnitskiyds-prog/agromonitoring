@@ -16,8 +16,8 @@ import { CROPS, REGIONS } from '../config/regions';
 import { texts } from '../content/texts';
 import { useForecast } from '../hooks/useData';
 import { sourceOf } from '../lib/data';
-import { chaToT } from '../lib/finance';
-import { formatDate, formatNumber, formatRub } from '../lib/format';
+import { breakevenCushion, chaToT } from '../lib/finance';
+import { formatDate, formatNumber, formatPct, formatRub } from '../lib/format';
 import { buildSeasonalProfile, seasonalDeviation } from '../lib/seasonality';
 import { buildSignals, detectWeatherRisks, pickAdvice } from '../lib/signals';
 import { harvestLink, marketLink, readParams, ROUTES, todayLink } from '../routes';
@@ -223,14 +223,22 @@ function TodayBody({
           {cropEcon && crop && (
             <>
               <KpiCard
-                label={`${T.total.costPerT}: ${crop.name.toLowerCase()}`}
+                label={`${T.total.costPerT} = ${T.total.breakeven.toLowerCase()}: ${crop.name.toLowerCase()}`}
                 value={cropEcon.costPerT === null ? '—' : formatRub(cropEcon.costPerT, { unit: '₽/т' })}
-              />
-              <KpiCard
-                label={`${T.total.breakeven}: ${crop.name.toLowerCase()}`}
-                value={cropEcon.breakevenPricePerT === null ? '—' : formatRub(cropEcon.breakevenPricePerT, { unit: '₽/т' })}
                 hint={T.total.priceNow(formatRub(cropEcon.pricePerT, { unit: '₽/т' }))}
               />
+              {(() => {
+                const cushion = breakevenCushion(cropEcon).pricePct;
+                return (
+                  <KpiCard
+                    label={texts.whatIf.breakeven.title}
+                    value={cushion === null ? '—' : formatPct(cushion, { sign: false, fractionDigits: 0 })}
+                    status={cushion !== null && cushion < 0 ? 'worse' : undefined}
+                    statusLabel={texts.whatIf.breakeven.belowAlready}
+                    hint={cushion !== null && cushion >= 0 ? texts.whatIf.breakeven.cushionPrice(formatPct(cushion, { sign: false, fractionDigits: 0 })) : undefined}
+                  />
+                );
+              })()}
             </>
           )}
         </div>
