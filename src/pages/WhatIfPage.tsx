@@ -35,8 +35,14 @@ const clampPct = (v: number | null) => (v === null ? 0 : Math.max(-30, Math.min(
 const TOKEN = '\u0000';
 
 export default function WhatIfPage() {
+  // Новые параметры в адресе (переход из «Рынка» и т. п.) сбрасывают ползунки: состояние берётся из query при монтировании
+  const { search } = useLocation();
+  return <WhatIfBody key={search} search={search} />;
+}
+
+function WhatIfBody({ search }: { search: string }) {
   const { profile } = useFarmProfile();
-  const params = readParams(useLocation().search);
+  const params = readParams(search);
   const cropParam = params.get('crop') as CropId | null;
   const paramCrop = cropParam && profile.crops.some((c) => c.crop === cropParam) ? cropParam : null;
   const fromMarketPct = params.num('pricePct');

@@ -524,8 +524,6 @@ export const texts = {
       title: 'Что с соляркой по неделям?',
       lead: 'Цена литра дизельного топлива в вашем регионе.',
       yAxis: '₽/л',
-      /** @deprecated Заменено на changeMonth: база сравнения везде «тот же день месяц назад». */
-      change: (pct: string, weeks: string) => `${pct} за ${weeks} нед.`,
       // «+8,8% за месяц (с 21 сентября)»; fromDate — готовая строка, например «21 сентября»
       changeMonth: (pct: string, fromDate: string) => `${pct} за месяц (с ${fromDate})`,
       changeMonthShort: (pct: string) => `${pct} за месяц`,
