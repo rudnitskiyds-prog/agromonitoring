@@ -21,15 +21,15 @@ export function SectionShell({
   children?: ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-6 border-t border-line pt-8 sm:pt-10">
+    <section id={id} aria-labelledby={`${id}-h`} tabIndex={-1} className="scroll-mt-6 border-t border-line pt-block-lg focus:outline-none sm:pt-section">
       <div className="flex items-baseline gap-3">
         <span className="num text-sm font-semibold text-ochre">{String(n).padStart(2, '0')}</span>
         <h2 id={`${id}-h`} className="text-xl leading-tight sm:text-2xl">
           {title}
         </h2>
       </div>
-      {lead && <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed text-ink sm:text-lg">{lead}</p>}
-      {children && <div className="mt-5">{children}</div>}
+      {lead && <p className="mt-stack max-w-[60ch] text-[17px] leading-relaxed text-ink sm:text-lg">{lead}</p>}
+      {children && <div className="mt-block">{children}</div>}
     </section>
   );
 }
@@ -39,7 +39,7 @@ function Note({ note }: { note: MethodNote }) {
   const Icon = warn ? TriangleAlert : Info;
   return (
     <aside
-      className={`flex gap-3 rounded-card border p-4 ${
+      className={`flex gap-3 rounded-card border p-card-sm sm:p-card ${
         warn ? 'border-ochre/60 bg-ochre-soft/60' : 'border-line bg-surface'
       }`}
     >
@@ -58,7 +58,7 @@ function Note({ note }: { note: MethodNote }) {
 export default function MethodSection({ section, n }: { section: Section; n: number }) {
   return (
     <SectionShell id={`m-${section.id}`} n={n} title={section.question} lead={section.lead}>
-      <div className="space-y-5">
+      <div className="space-y-block">
         {section.paragraphs?.map((p, i) => (
           <p key={i} className="max-w-[68ch] text-[15.5px] leading-relaxed text-ink/85">
             {p}
@@ -66,9 +66,9 @@ export default function MethodSection({ section, n }: { section: Section; n: num
         ))}
 
         {section.formulas && section.formulas.length > 0 && (
-          <dl className="grid gap-3 lg:grid-cols-2">
+          <dl className="grid gap-gutter lg:grid-cols-2">
             {section.formulas.map((f) => (
-              <div key={f.id} className="min-w-0 rounded-card border border-line bg-surface p-4">
+              <div key={f.id} className="min-w-0 rounded-card border border-line bg-surface p-card-sm sm:p-card">
                 <dt className="text-sm font-semibold text-ink">{f.label}</dt>
                 <dd className="mt-2">
                   <code className="block rounded-control border-l-2 border-ochre bg-bg px-3 py-2 font-mono text-[13px] leading-relaxed text-ink [overflow-wrap:anywhere]">

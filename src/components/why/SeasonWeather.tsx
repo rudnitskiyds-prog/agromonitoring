@@ -92,16 +92,16 @@ export default function SeasonWeather({ region, crop, year, precipitation, tempe
   return (
     <div>
       {main ? (
-        <div className="relative overflow-hidden rounded-card border border-status-worse/40 bg-status-worse-bg/60 px-4 py-4 sm:px-5">
+        <div className="relative overflow-hidden rounded-card border border-status-worse/40 bg-status-worse-bg/60 p-card-sm sm:p-card">
           <StatusTag status="worse" label={cause?.kind === 'wet' ? T_SW.mainCauseWet : T_SW.mainCauseDry} />
           <p className="mt-2.5 text-[17px] font-semibold leading-snug text-ink sm:text-lg">{sentence(main)}</p>
           <p className="mt-1.5 max-w-prose text-[15px] leading-snug text-ink/80">{causeText}</p>
         </div>
       ) : (
-        <p className="rounded-card border border-line bg-bg/60 px-4 py-3 text-[15px] text-ink/80">{causeText}</p>
+        <p className="rounded-card border border-line bg-bg/60 p-card-sm text-[15px] text-ink/80">{causeText}</p>
       )}
 
-      <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
+      <div className="mt-block flex flex-wrap items-baseline justify-between gap-2">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
           <CloudRain size={16} className="text-accent" aria-hidden />
           {T_SW.rainCol}, {texts.common.units.mm}
@@ -162,7 +162,7 @@ export default function SeasonWeather({ region, crop, year, precipitation, tempe
         })}
       </ol>
 
-      <ul className="mt-4 space-y-1.5 text-[15px] leading-snug text-ink/85">
+      <ul className="mt-stack space-y-1.5 text-[15px] leading-snug text-ink/85">
         {notable.map((r) => (
           <li key={r.key} className="flex gap-2">
             <span aria-hidden className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-ink/50" />
@@ -172,7 +172,7 @@ export default function SeasonWeather({ region, crop, year, precipitation, tempe
       </ul>
 
       {rows.some((r) => r.tDiff !== null) && (
-        <div className="mt-5">
+        <div className="mt-block">
           <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
             <Thermometer size={16} className="text-accent" aria-hidden />
             {T_SW.tempCol}, {texts.common.units.celsius}
@@ -190,7 +190,7 @@ export default function SeasonWeather({ region, crop, year, precipitation, tempe
         </div>
       )}
 
-      <SourceNote source={[sourceOf(precipitation), sourceOf(temperature)]} className="mt-4 border-t border-line pt-3" />
+      <SourceNote source={[sourceOf(precipitation), sourceOf(temperature)]} className="mt-stack border-t border-line pt-stack" />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import SourcesTable, { useSourceRows } from '../components/sources/SourcesTable'
 import { methodology } from '../content/methodology';
 import { texts } from '../content/texts';
 import { useManifest } from '../hooks/useData';
+import { ErrorState, LoadingState, Skeleton } from '../components/States';
+import { scrollBehavior } from '../components/why/motion';
 import { formatDate } from '../lib/format';
 
 const S = texts.sources;
@@ -50,24 +52,19 @@ function useActiveSection(ids: string[]): string | null {
 const TOC_IDS = TOC.map((t) => t.id);
 
 export default function SourcesPage() {
-  const manifest = useManifest();
-  const rows = useSourceRows(manifest.status === 'ready' ? manifest.data : null);
   const active = useActiveSection(TOC_IDS);
   let n = 1;
 
   return (
-    <main className="mx-auto max-w-page px-4 pb-16 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+    <main className="mx-auto max-w-page px-4 pb-section-lg pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8">
       <header className="max-w-3xl">
         <p className="kicker">{S.meta}</p>
-        <h1 className="mt-3 text-[28px] font-semibold leading-[1.1] sm:text-[40px]">{S.title}</h1>
-        <p className="mt-3 max-w-prose text-[16px] leading-relaxed text-ink/80 sm:text-[17px]">{S.lead}</p>
-        {manifest.status === 'ready' && (
-          <p className="num mt-3 text-sm text-muted">{S.updated(formatDate(manifest.data.generated_at, 'long'))}</p>
-        )}
+        <h1 className="mt-stack text-[28px] font-semibold leading-[1.1] sm:text-[40px]">{S.title}</h1>
+        <p className="mt-stack max-w-prose text-[16px] leading-relaxed text-ink/80 sm:text-[17px]">{S.lead}</p>
       </header>
 
       {/* Что здесь демо */}
-      <aside className="mt-8 flex max-w-3xl gap-3 rounded-card border border-dashed border-line-strong bg-surface p-4 sm:p-5">
+      <aside className="mt-block-lg flex max-w-3xl gap-3 rounded-card border border-dashed border-line-strong bg-surface p-card-sm sm:p-card">
         <FlaskConical size={20} className="mt-0.5 shrink-0 text-muted" aria-hidden />
         <div>
           <p className="font-semibold">{S.demoNotice.title}</p>
@@ -75,7 +72,7 @@ export default function SourcesPage() {
         </div>
       </aside>
 
-      <div className="mt-10 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
+      <div className="mt-block-lg lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-section">
         {/* Оглавление журнала — только десктоп */}
         <nav aria-label={SP.tocLabel} className="hidden lg:block">
           <ol className="sticky top-6 space-y-2.5 border-l border-line pl-4 text-[13px] leading-snug">
@@ -85,7 +82,10 @@ export default function SourcesPage() {
                   href={`#/sources`}
                   onClick={(e) => {
                     e.preventDefault();
-                    document.getElementById(t.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const el = document.getElementById(t.id);
+                    el?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+                    // Фокус — в раздел, чтобы следующий Tab шёл по его содержимому
+                    el?.focus({ preventScroll: true });
                   }}
                   aria-current={active === t.id ? 'location' : undefined}
                   className={`-ml-[17px] flex gap-2 border-l-2 pl-[15px] transition-colors ${
@@ -100,11 +100,9 @@ export default function SourcesPage() {
           </ol>
         </nav>
 
-        <div className="min-w-0 space-y-12">
+        <div className="min-w-0 space-y-section">
           <SectionShell id="s-table" n={n++} title={S.table.title} lead={methodology.indicators.lead}>
-            {manifest.status === 'loading' && <p className="text-sm text-muted">{S.table.loading}</p>}
-            {manifest.status === 'error' && <p className="text-sm text-ink/80">{S.table.empty}</p>}
-            {manifest.status === 'ready' && <SourcesTable rows={rows} />}
+            <SourcesBlock />
           </SectionShell>
 
           <div>
@@ -134,7 +132,7 @@ export default function SourcesPage() {
                 </li>
               ))}
             </ol>
-            <p className="mt-5 flex max-w-[68ch] gap-2.5 text-[14.5px] leading-relaxed text-ink/80">
+            <p className="mt-block flex max-w-[68ch] gap-2.5 text-[14.5px] leading-relaxed text-ink/80">
               <FlaskConical size={16} className="mt-[3px] shrink-0 text-muted" aria-hidden />
               {methodology.replaceDemo.note}
             </p>
@@ -166,5 +164,31 @@ export default function SourcesPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// ── Таблица источников с загрузкой манифеста; повтор — перемонтирование по ключу ──
+function SourcesBlock() {
+  const [attempt, setAttempt] = useState(0);
+  return <SourcesBlockInner key={attempt} onRetry={() => setAttempt((n) => n + 1)} />;
+}
+
+function SourcesBlockInner({ onRetry }: { onRetry: () => void }) {
+  const manifest = useManifest();
+  const rows = useSourceRows(manifest.status === 'ready' ? manifest.data : null);
+  if (manifest.status === 'loading')
+    return (
+      <LoadingState label={S.table.loading} framed={false}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <Skeleton key={i} height={56} />
+        ))}
+      </LoadingState>
+    );
+  if (manifest.status === 'error') return <ErrorState message={S.table.empty} onRetry={onRetry} />;
+  return (
+    <>
+      <p className="num -mt-2 mb-stack text-sm text-muted">{S.updated(formatDate(manifest.data.generated_at, 'long'))}</p>
+      <SourcesTable rows={rows} />
+    </>
   );
 }

@@ -3,13 +3,13 @@
 // графиков с общей шкалой лет, без второй оси; осадки сезона по месяцам против нормы; прогноз на 16 дней с рисками.
 // Сценарий С3 приходит сюда с ?region=saratov&crop=sunflower.
 import { ArrowRight, CloudOff, Radio } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Button from '../components/Button';
 import ChartFrame from '../components/ChartFrame';
 import ForecastStrip, { RiskList } from '../components/harvest/ForecastStrip';
 import RainLedger from '../components/harvest/RainLedger';
 import YearMiniChart from '../components/harvest/YearMiniChart';
-import { ErrorBlock, LoadingBlock } from '../components/market/LoadState';
+import { ErrorState, LoadingState, Skeleton } from '../components/States';
 import PagePicker from '../components/market/PagePicker';
 import { useSelection } from '../components/market/useSelection';
 import { useFarmProfile } from '../components/useFarmProfile';
@@ -33,23 +33,19 @@ export default function HarvestPage() {
   const { region, crop } = useSelection(profile);
   const regionCfg = REGIONS[region];
 
-  const keys: SeriesKey[] = [
-    { indicator: 'yield', region, crop, frequency: 'year' },
-    { indicator: 'precipitation', region, frequency: 'month' },
-    { indicator: 'temperature_mean', region, frequency: 'month' },
-    { indicator: 'active_temp_sum', region, frequency: 'month' },
-  ];
-  const data = useSeriesList(keys);
+  // Блоки независимы: история (урожай + погода ERA5) и прогноз. Повтор — перемонтирование по ключу.
+  const [retry, setRetry] = useState({ history: 0, forecast: 0 });
+  const bump = (k: keyof typeof retry) => () => setRetry((r) => ({ ...r, [k]: r[k] + 1 }));
 
   return (
-    <main className="mx-auto max-w-page px-4 pb-16 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+    <main className="mx-auto max-w-page px-4 pb-section-lg pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8">
       <header>
         <p className="kicker">
           {C.nav.harvest} · {regionCfg.name}
         </p>
-        <h1 className="mt-3 text-[28px] font-semibold leading-[1.12] sm:text-[38px]">{H.title}</h1>
+        <h1 className="mt-stack text-[28px] font-semibold leading-[1.12] sm:text-[38px]">{H.title}</h1>
         <PagePicker
-          className="mt-6"
+          className="mt-block"
           region={region}
           crop={crop}
           profileCrops={region === profile.region ? profile.crops.map((c) => c.crop) : []}
@@ -57,28 +53,9 @@ export default function HarvestPage() {
         />
       </header>
 
-      {data.status === 'loading' && (
-        <div className="mt-8">
-          <LoadingBlock height={200} />
-        </div>
-      )}
-      {data.status === 'error' && (
-        <div className="mt-8">
-          <ErrorBlock what={Y.title} />
-        </div>
-      )}
-      {data.status === 'ready' && (
-        <HistoryBlocks
-          crop={crop}
-          region={region}
-          yieldS={data.data[0]}
-          rain={data.data[1]}
-          temp={data.data[2]}
-          active={data.data[3]}
-        />
-      )}
+      <HistoryArea key={`h-${region}-${crop}-${retry.history}`} region={region} crop={crop} onRetry={bump('history')} />
 
-      <ForecastBlock region={region} />
+      <ForecastBlock key={`f-${region}-${retry.forecast}`} region={region} onRetry={bump('forecast')} />
 
       <SummaryBlock crop={crop} region={region} />
     </main>
@@ -86,6 +63,43 @@ export default function HarvestPage() {
 }
 
 // ── Урожай и погода сезона по годам ─────────────────────────────────────────
+function HistoryArea({ region, crop, onRetry }: { region: RegionId; crop: CropId; onRetry: () => void }) {
+  const keys: SeriesKey[] = [
+    { indicator: 'yield', region, crop, frequency: 'year' },
+    { indicator: 'precipitation', region, frequency: 'month' },
+    { indicator: 'temperature_mean', region, frequency: 'month' },
+    { indicator: 'active_temp_sum', region, frequency: 'month' },
+  ];
+  const data = useSeriesList(keys);
+  if (data.status === 'loading')
+    return (
+      <div className="mt-block grid gap-block">
+        <LoadingState label={C.loading.chart}>
+          <div className="grid gap-block sm:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} height={200} />
+            ))}
+          </div>
+        </LoadingState>
+        <LoadingState label={C.loading.chart}>
+          <Skeleton height={260} />
+        </LoadingState>
+      </div>
+    );
+  if (data.status === 'error')
+    return <ErrorState className="mt-block" message={C.errors.loadSeries(Y.title)} onRetry={onRetry} />;
+  return (
+    <HistoryBlocks
+      crop={crop}
+      region={region}
+      yieldS={data.data[0]}
+      rain={data.data[1]}
+      temp={data.data[2]}
+      active={data.data[3]}
+    />
+  );
+}
+
 function HistoryBlocks({
   crop,
   region,
@@ -152,7 +166,7 @@ function HistoryBlocks({
   return (
     <>
       <ChartFrame
-        className="mt-8"
+        className="mt-block"
         as="h2"
         question={Y.title}
         lead={
@@ -217,7 +231,7 @@ function HistoryBlocks({
         </div>
       </ChartFrame>
 
-      <div className="mt-6">
+      <div className="mt-block">
         <RainLedger rows={model.rainRows} year={model.lastYear} range={range} dataTo={rain.updated_at} source={weatherSrc} critical={model.critical} cause={model.cause} />
       </div>
     </>
@@ -225,7 +239,7 @@ function HistoryBlocks({
 }
 
 // ── Прогноз на 16 дней ──────────────────────────────────────────────────────
-function ForecastBlock({ region }: { region: RegionId }) {
+function ForecastBlock({ region, onRetry }: { region: RegionId; onRetry: () => void }) {
   const cfg = REGIONS[region];
   const fc = useForecast(cfg ?? null);
   const F = H.forecast;
@@ -233,22 +247,21 @@ function ForecastBlock({ region }: { region: RegionId }) {
 
   if (fc.status === 'loading')
     return (
-      <div className="mt-6">
-        <LoadingBlock label={C.loading.default} height={220} />
-      </div>
+      <LoadingState className="mt-block" label={C.loading.default}>
+        <Skeleton height={36} width="50%" />
+        <Skeleton height={220} />
+      </LoadingState>
     );
   if (fc.status === 'error')
     return (
-      <div className="mt-6">
-        <ErrorBlock what={F.title} />
-      </div>
+      <ErrorState className="mt-block" message={C.errors.loadSeries(F.title)} onRetry={onRetry} />
     );
 
   const { data: days, origin, source } = fc.data;
   const live = origin === 'live';
   return (
     <ChartFrame
-      className="mt-6"
+      className="mt-block"
       as="h2"
       question={F.title}
       lead={`${F.lead} ${cfg.shortName}.`}
@@ -294,7 +307,7 @@ function SummaryBlock({ crop, region }: { crop: CropId; region: RegionId }) {
   return (
     <section
       aria-labelledby="harvest-summary"
-      className="mt-6 grid gap-4 rounded-sheet border border-accent/25 bg-accent-soft/60 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10"
+      className="mt-block grid gap-4 rounded-sheet border border-accent/25 bg-accent-soft/60 p-card sm:p-card-lg lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-block-lg"
     >
       <div>
         <h2 id="harvest-summary" className="text-xl leading-tight sm:text-[22px]">

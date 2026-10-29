@@ -151,9 +151,9 @@ export default function SourcesTable({ rows }: { rows: SourceRow[] }) {
       </table>
 
       {/* Телефон: карточки */}
-      <ul className="space-y-2.5 md:hidden">
+      <ul className="space-y-gutter md:hidden">
         {rows.map((r) => (
-          <li key={r.id} className="rounded-card border border-line bg-surface p-3.5">
+          <li key={r.id} className="rounded-card border border-line bg-surface p-card-sm">
             <div className="flex items-start justify-between gap-3">
               <p className="min-w-0 text-[15px] leading-snug">
                 <NameCell row={r} />

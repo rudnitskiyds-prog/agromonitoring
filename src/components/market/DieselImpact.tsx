@@ -1,6 +1,8 @@
 // «Во сколько хозяйству обошлась солярка за месяц»: лист журнала рядом с недельным графиком дизеля.
 // Числа приходят готовыми (factorAnalysis + computeCropEconomics из src/lib/finance.ts).
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Minus, RotateCw, TriangleAlert } from 'lucide-react';
+import Button from '../Button';
+import { Skeleton } from '../States';
 import { CROPS } from '../../config/regions';
 import { texts } from '../../content/texts';
 import { formatNumber, formatPct, formatRub } from '../../lib/format';
@@ -33,6 +35,9 @@ export interface DieselImpactProps {
   sources: SourceRef[];
   /** Выбран не регион хозяйства — рубли не считаем */
   otherRegion?: boolean;
+  /** Состояние рядов профиля для пересчёта: пока грузятся — скелет, ошибка — сообщение */
+  farmStatus?: 'loading' | 'error' | 'ready';
+  onRetry?: () => void;
   className?: string;
 }
 
@@ -41,7 +46,7 @@ function effectStatus(v: number): SignalStatus {
   return v > 0 ? 'better' : 'worse';
 }
 
-export default function DieselImpact({ rows, total, changePct, changeText, priceNow, sources, otherRegion, className = '' }: DieselImpactProps) {
+export default function DieselImpact({ rows, total, changePct, changeText, priceNow, sources, otherRegion, farmStatus = 'ready', onRetry, className = '' }: DieselImpactProps) {
   const Arrow = changePct == null || Math.abs(changePct) < 0.05 ? Minus : changePct > 0 ? ArrowUpRight : ArrowDownRight;
   const status = effectStatus(total);
   return (
@@ -50,7 +55,7 @@ export default function DieselImpact({ rows, total, changePct, changeText, price
       className={`paper-ruled relative flex h-full flex-col overflow-hidden rounded-sheet border border-line bg-surface shadow-raise ${className}`}
     >
       <span aria-hidden className="absolute inset-y-0 left-8 w-px bg-status-worse/25" />
-      <div className="relative flex flex-1 flex-col py-5 pl-12 pr-5">
+      <div className="relative flex flex-1 flex-col py-card pl-12 pr-card">
         <h3 id="diesel-impact-title" className="text-lg leading-snug">
           {L.title}
         </h3>
@@ -65,8 +70,26 @@ export default function DieselImpact({ rows, total, changePct, changeText, price
           </span>
         </div>
 
-        {otherRegion || !rows ? (
-          <p className="mt-4 text-sm leading-relaxed text-ink/80">{L.otherRegion}</p>
+        {otherRegion ? (
+          <p className="mt-stack text-sm leading-relaxed text-ink/80">{L.otherRegion}</p>
+        ) : farmStatus === 'loading' ? (
+          <div className="mt-block space-y-3" role="status" aria-busy="true">
+            <p className="text-sm text-muted">{texts.common.loading.calc}</p>
+            <Skeleton height={40} width="70%" />
+            <Skeleton height={18} />
+          </div>
+        ) : !rows ? (
+          <div role="alert" className="mt-stack">
+            <p className="flex items-start gap-2 text-sm leading-relaxed text-ink/80">
+              <TriangleAlert size={16} className="mt-0.5 shrink-0 text-status-worse" aria-hidden />
+              {texts.common.errors.load}
+            </p>
+            {onRetry && (
+              <Button variant="secondary" size="sm" className="mt-stack" iconLeft={<RotateCw size={14} aria-hidden />} onClick={onRetry}>
+                {texts.common.actions.retry}
+              </Button>
+            )}
+          </div>
         ) : (
           <>
             <p className="kicker mt-5">{L.farmTotal}</p>

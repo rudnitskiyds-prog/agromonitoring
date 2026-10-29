@@ -40,7 +40,7 @@ export default function RainLedger({ rows, year, range, dataTo, source, critical
 
   return (
     <section aria-labelledby="rain-ledger-title" className="rounded-card border border-line bg-surface">
-      <div className="px-4 pt-4 sm:px-6 sm:pt-5">
+      <div className="px-card pt-card sm:px-card-lg sm:pt-card-lg">
         <h2 id="rain-ledger-title" className="text-xl leading-tight sm:text-[22px]">
           {L.title(String(year))}
         </h2>
@@ -134,10 +134,10 @@ export default function RainLedger({ rows, year, range, dataTo, source, critical
               : F.noMainCause}
         </span>
       </p>
-      <p className="px-4 pb-3 text-xs text-muted sm:px-6">
+      <p className="px-card pb-stack text-xs text-muted sm:px-card-lg">
         {L.dryHint(formatPct(Math.abs(DRY_PCT), { sign: false, fractionDigits: 0 }))} {L.dataTo(formatDate(dataTo, 'long'))}.
       </p>
-      <SourceNote source={source} className="border-t border-line px-4 py-3 sm:px-6" />
+      <SourceNote source={source} className="border-t border-line px-card py-stack sm:px-card-lg" />
     </section>
   );
 }

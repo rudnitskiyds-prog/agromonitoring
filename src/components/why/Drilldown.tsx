@@ -8,9 +8,10 @@ import { sourceOf } from '../../lib/data';
 import { formatNumber, formatPct, formatRub } from '../../lib/format';
 import { changePct, validPoints } from '../../lib/series';
 import { ROUTES, harvestLink, marketLink, whatIfLink } from '../../routes';
-import { useSeriesList } from '../../hooks/useData';
 import type { CropId, DataSeries, FactorAnalysis, FactorId, GeoScope, Frequency, RegionId, SeriesKey, SignalStatus } from '../../types';
 import Button from '../Button';
+import { LoadingState, Skeleton } from '../States';
+import WithSeries from './WithSeries';
 import ChartFrame from '../ChartFrame';
 import LineChart, { type ChartSeries } from '../LineChart';
 import StatusTag from '../StatusTag';
@@ -123,18 +124,14 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
 
   const scopes = useMemo(() => (factor === 'otherCosts' ? [] : [region, ...compareScopes(region, factor)]), [region, factor]);
   const keys = spec ? scopes.map((s) => spec.key(s)) : [];
-  const seriesState = useSeriesList(keys);
-  const weatherKeys: SeriesKey[] =
-    factor === 'yield' && current === 'factor'
-      ? [
-          { indicator: 'precipitation', region, frequency: 'month' },
-          { indicator: 'temperature_mean', region, frequency: 'month' },
-        ]
-      : [];
-  const weatherState = useSeriesList(weatherKeys);
+  const chartLoading = (
+    <LoadingState label={texts.common.loading.chart} framed={false}>
+      <Skeleton height={300} className="rounded-card" />
+    </LoadingState>
+  );
 
   return (
-    <section id="why-drilldown" aria-labelledby="why-drilldown-title" className="scroll-mt-6">
+    <section id="why-drilldown" tabIndex={-1} aria-labelledby="why-drilldown-title" className="scroll-mt-6 focus:outline-none">
       <div className="flex flex-wrap items-center gap-3">
         <span className="grid h-9 w-9 place-items-center rounded-control bg-accent-soft text-accent">
           <Icon size={18} aria-hidden />
@@ -148,7 +145,7 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
       </div>
 
       {/* Хлебные крошки: путь анализа */}
-      <nav aria-label={D.breadcrumbLabel} className="mt-5">
+      <nav aria-label={D.breadcrumbLabel} className="mt-block">
         <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-2 text-sm">
           {steps.map((s, i) => {
             const on = s === current;
@@ -185,47 +182,55 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
         </ol>
       </nav>
 
-      <div className="mt-5 rounded-sheet border border-line bg-surface p-4 sm:p-6">
+      <div className="mt-block rounded-sheet border border-line bg-surface p-card-sm sm:p-card-lg">
         <h3 className="text-lg leading-snug">{stepQuestion[current]}</h3>
-        <div className="mt-4">
+        <div className="mt-stack">
           {current === 'indicator' && contribution && (
             <IndicatorStep factor={factor} analysis={analysis} spec={spec} />
           )}
           {current === 'dynamics' && spec && (
-            <SeriesStep
-              mode="dynamics"
-              factor={factor}
-              crop={crop}
-              region={region}
-              scopes={scopes}
-              state={seriesState}
-              spec={spec}
-              from={from}
-              to={to}
-              own={own}
-            />
+            <WithSeries keys={keys} loading={chartLoading} errorMessage={texts.common.errors.chartFailed}>
+              {(data) => (
+                <SeriesStep
+                  mode="dynamics"
+                  factor={factor}
+                  crop={crop}
+                  region={region}
+                  scopes={scopes}
+                  data={data}
+                  spec={spec}
+                  from={from}
+                  to={to}
+                  own={own}
+                />
+              )}
+            </WithSeries>
           )}
           {current === 'region' && spec && (
-            <SeriesStep
-              mode="region"
-              factor={factor}
-              crop={crop}
-              region={region}
-              scopes={scopes}
-              state={seriesState}
-              spec={spec}
-              from={from}
-              to={to}
-              own={own}
-            />
+            <WithSeries keys={keys} loading={chartLoading} errorMessage={texts.common.errors.chartFailed}>
+              {(data) => (
+                <SeriesStep
+                  mode="region"
+                  factor={factor}
+                  crop={crop}
+                  region={region}
+                  scopes={scopes}
+                  data={data}
+                  spec={spec}
+                  from={from}
+                  to={to}
+                  own={own}
+                />
+              )}
+            </WithSeries>
           )}
           {current === 'dynamics' && !spec && <p className="text-[15px] text-ink/80">{DX.otherCostsNoDynamics}</p>}
           {current === 'factor' && (
-            <FactorStep factor={factor} crop={crop} region={region} to={to} weatherState={weatherState} />
+            <FactorStep factor={factor} crop={crop} region={region} to={to} />
           )}
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4">
+        <div className="mt-block flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-stack">
           {idx > 0 && (
             <Button variant="secondary" size="sm" iconLeft={<ArrowLeft size={15} aria-hidden />} onClick={() => onStep(steps[idx - 1])}>
               {D.back}
@@ -252,12 +257,12 @@ function IndicatorStep({ factor, analysis, spec }: { factor: FactorId; analysis:
   const fmt = spec?.fmt ?? ((v: number) => formatRub(v, { unit: '₽/га' }));
   const status: SignalStatus = statusOfEffect(c.effectPerHa);
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8">
+    <div className="grid gap-block lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-block-lg">
       <div>
         <p className="max-w-prose text-[15px] leading-relaxed text-ink/80">
           {factor === 'otherCosts' ? W.waterfall.otherCostsHint : `${FT[factor].short} ${FT[factor].effectHint}`}
         </p>
-        <dl className="num mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+        <dl className="num mt-stack grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <div>
             <dt className="text-xs text-muted">
               {DX.from} · {analysis.base.label}
@@ -276,7 +281,7 @@ function IndicatorStep({ factor, analysis, spec }: { factor: FactorId; analysis:
           </div>
         </dl>
       </div>
-      <div className="rounded-card border border-line bg-bg/60 p-4">
+      <div className="rounded-card border border-line bg-bg/60 p-card-sm sm:p-card">
         <p className="text-xs text-muted">{DX.effect}</p>
         <p className="num-display mt-1.5 text-[30px] font-semibold leading-none sm:text-[34px]">
           {formatMoney(c.effectPerHa, 'perHa', true)}
@@ -297,7 +302,7 @@ function SeriesStep({
   crop,
   region,
   scopes,
-  state,
+  data: all,
   spec,
   from,
   to,
@@ -309,14 +314,11 @@ function SeriesStep({
   crop: CropId;
   region: RegionId;
   scopes: GeoScope[];
-  state: ReturnType<typeof useSeriesList>;
+  data: DataSeries[];
   spec: IndicatorSpec;
   from: number;
   to: number;
 }) {
-  if (state.status === 'loading') return <p className="text-sm text-muted">{texts.common.loading.chart}</p>;
-  if (state.status === 'error') return <p className="text-sm text-ink/80">{texts.common.errors.chartFailed}</p>;
-  const all = state.data;
   const toDate = seasonDate(to);
   const fromDate = seasonDate(from);
   const used = mode === 'dynamics' ? all.slice(0, 1) : all;
@@ -364,13 +366,13 @@ function SeriesStep({
         />
       </ChartFrame>
       {mode === 'region' && (
-        <ul className="num mt-4 grid gap-2 sm:grid-cols-3">
+        <ul className="num mt-stack grid gap-gutter sm:grid-cols-3">
           {changes.map((c, i) => {
             const st: SignalStatus | null =
               c.pct === null ? null : c.pct * spec.good < -3 ? 'worse' : c.pct * spec.good > 3 ? 'better' : 'normal';
             const name = i === 0 ? (own ? RC.yours(scopeName(c.scope)) : RC.selected(scopeName(c.scope))) : scopeName(c.scope);
             return (
-              <li key={String(c.scope)} className={`rounded-card border px-3.5 py-3 ${i === 0 ? 'border-accent/50 bg-accent-soft/30' : 'border-line'}`}>
+              <li key={String(c.scope)} className={`rounded-card border p-card-sm ${i === 0 ? 'border-accent/50 bg-accent-soft/30' : 'border-line'}`}>
                 <p className="text-[13px] text-muted">{name}</p>
                 <p className="mt-1 flex flex-wrap items-center gap-2">
                   <span className="text-[19px] font-semibold">{c.pct === null ? '—' : formatPct(c.pct)}</span>
@@ -394,13 +396,11 @@ function FactorStep({
   crop,
   region,
   to,
-  weatherState,
 }: {
   factor: FactorId;
   crop: CropId;
   region: RegionId;
   to: number;
-  weatherState: ReturnType<typeof useSeriesList>;
 }) {
   if (factor === 'yield') {
     return (
@@ -409,20 +409,26 @@ function FactorStep({
           <CloudSunRain size={17} className="text-accent" aria-hidden />
           {W.factorCause.title} <span className="font-normal text-muted">· {DX.seasonWeatherOf(String(to))}</span>
         </p>
-        <div className="mt-4">
-          {weatherState.status === 'loading' && <p className="text-sm text-muted">{texts.common.loading.default}</p>}
-          {weatherState.status === 'error' && <p className="text-[15px] text-ink/80">{W.factorCause.noWeather}</p>}
-          {weatherState.status === 'ready' && weatherState.data.length === 2 && (
-            <SeasonWeather
-              region={region}
-              crop={crop}
-              year={to}
-              precipitation={weatherState.data[0]}
-              temperature={weatherState.data[1]}
-            />
-          )}
+        <div className="mt-stack">
+          <WithSeries
+            keys={[
+              { indicator: 'precipitation', region, frequency: 'month' },
+              { indicator: 'temperature_mean', region, frequency: 'month' },
+            ]}
+            loading={
+              <LoadingState label={texts.common.loading.default} framed={false}>
+                <Skeleton height={96} className="rounded-card" />
+                <Skeleton height={220} />
+              </LoadingState>
+            }
+            errorMessage={texts.common.errors.load}
+          >
+            {([precipitation, temperature]) => (
+              <SeasonWeather region={region} crop={crop} year={to} precipitation={precipitation} temperature={temperature} />
+            )}
+          </WithSeries>
         </div>
-        <Button variant="text" size="sm" to={harvestLink({ crop, region })} iconRight={<ArrowRight size={14} aria-hidden />} className="mt-3">
+        <Button variant="text" size="sm" to={harvestLink({ crop, region })} iconRight={<ArrowRight size={14} aria-hidden />} className="mt-stack">
           {W.factorCause.link}
         </Button>
       </div>
@@ -432,24 +438,24 @@ function FactorStep({
   return (
     <div>
       <p className="max-w-prose text-[15px] leading-relaxed text-ink/85">{text}</p>
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <div className="mt-stack flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {factor === 'price' && (
           <>
-            <Button to={marketLink({ crop, region, focus: 'price' })} iconRight={<ArrowRight size={16} aria-hidden />}>
+            <Button wrap to={marketLink({ crop, region, focus: 'price' })} iconRight={<ArrowRight size={16} aria-hidden />}>
               {ROUTES.market.title}
             </Button>
-            <Button variant="secondary" to={whatIfLink({ crop })}>
+            <Button variant="secondary" wrap to={whatIfLink({ crop })}>
               {DX.toWhatIf}
             </Button>
           </>
         )}
         {factor === 'diesel' && (
-          <Button to={marketLink({ focus: 'diesel' })} iconRight={<ArrowRight size={16} aria-hidden />}>
+          <Button wrap to={marketLink({ focus: 'diesel' })} iconRight={<ArrowRight size={16} aria-hidden />}>
             {ROUTES.market.title}
           </Button>
         )}
         {factor === 'otherCosts' && (
-          <Button to={ROUTES.farm.path} iconRight={<ExternalLink size={15} aria-hidden />}>
+          <Button wrap to={ROUTES.farm.path} iconRight={<ExternalLink size={15} aria-hidden />}>
             {texts.common.actions.editFarm}
           </Button>
         )}
