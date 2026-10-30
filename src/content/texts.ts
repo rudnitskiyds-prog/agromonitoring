@@ -411,6 +411,7 @@ export const texts = {
         `За ${period} прибыль с гектара ${crop} изменилась на ${rub}`,
       farm: (rub: string) => `На всё хозяйство: ${rub}`,
       avgPerHa: 'в среднем с гектара',
+      avgPerHaFarm: 'в среднем по хозяйству',
       priceNow: (rub: string) => `сейчас ${rub}`,
       profitNow: 'Прибыль хозяйства при сегодняшних ценах',
       marginNow: 'Прибыль с гектара',

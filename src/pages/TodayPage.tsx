@@ -177,8 +177,25 @@ function TodayInner({ onRetry }: { onRetry: () => void }) {
 
 // Названия причин в главной фразе — в нижнем регистре
 const CAUSE_NAME: Record<FactorId, string> = T.total.causeNames;
-/** «₽/га» не разрывается переносом после «/» */
-const nb = (s: string) => s.replace('/', '/\u2060');
+/**
+ * Сумма «+5 944 ₽/га» не разрывается переносом: помечаем её в строке и рендерим неразрывным span
+ * (U+2060 после «/» некоторые шрифты рисуют как пробел).
+ */
+const NB_OPEN = '\u0001';
+const NB_CLOSE = '\u0002';
+const nb = (s: string) => `${NB_OPEN}${s}${NB_CLOSE}`;
+function renderNb(text: string) {
+  return text.split(NB_OPEN).map((chunk, i) => {
+    if (i === 0) return chunk;
+    const [money, rest] = chunk.split(NB_CLOSE);
+    return (
+      <span key={i}>
+        <span className="whitespace-nowrap">{money}</span>
+        {rest}
+      </span>
+    );
+  });
+}
 
 /** С1: «За месяц прибыль с гектара пшеницы +5 944 ₽/га: цена +7% (+6 325 ₽/га), солярка +8,8% (−381 ₽/га)» */
 function headlineFor(a: FactorAnalysis, periodLong: string, cropGen: string, notPublished?: string): string {
@@ -274,12 +291,12 @@ function TodayBody({
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusTag status={totalStatus} size="sm" />
             <span className="num text-sm text-ink/80">
-              {formatRub(perHaFarm, { unit: '₽/га', sign: true })} {T.total.avgPerHa}
+              {formatRub(perHaFarm, { unit: '₽/га', sign: true })} {T.total.avgPerHaFarm}
             </span>
           </div>
           {a && crop && (
             <p className="mt-4 max-w-[46ch] text-[17px] leading-snug">
-              {headlineFor(a, periodLong, crop.nameGenitive, notPublished)}
+              {renderNb(headlineFor(a, periodLong, crop.nameGenitive, notPublished))}
             </p>
           )}
           <p className="mt-3 max-w-prose text-xs leading-relaxed text-muted">{T.total.seasonNote}</p>
