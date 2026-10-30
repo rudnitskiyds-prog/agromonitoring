@@ -252,6 +252,7 @@ function TodayBody({
   const yld = contrib('yield');
   const worstRisk = risks.find((r) => r.status === 'worse') ?? risks[0];
   const notPublished = model.period === 'month' && a ? model.priceNotPublished[a.crop] : undefined;
+  const yieldFallback = model.period === 'year' && a ? model.yieldPlanFallback[a.crop] : undefined;
 
   return (
     <>
@@ -394,6 +395,11 @@ function TodayBody({
                   period === 'month' ? (
                     <span className="inline-flex flex-wrap items-center gap-1.5">
                       {texts.factors.yield.planUnchanged}
+                      {cropMarket?.plan.yieldCha.assumption && <AssumptionBadge size="sm" />}
+                    </span>
+                  ) : yieldFallback ? (
+                    <span className="inline-flex flex-wrap items-center gap-1.5">
+                      {C.labels.yieldPlanFallback(yieldFallback)}
                       {cropMarket?.plan.yieldCha.assumption && <AssumptionBadge size="sm" />}
                     </span>
                   ) : (

@@ -29,9 +29,6 @@ import type { CropId, FactorId, MarketData, RegionId } from '../types';
 const W = texts.why;
 
 const WP = W.page;
-// TODO(copywriter): why.page.datesNote говорит «на 1 октября», а теперь даты выравниваются по месяцу цены
-const T_DATES_NOTE =
-  'Цена и солярка — на один и тот же месяц обоих сезонов: последний до октября, где есть цена Росстата (солярка в среднем по России). Урожайность — итог года по региону.';
 
 const FACTOR_FMT: Record<FactorId, (v: number) => string> = {
   price: (v) => formatRub(v, { unit: '₽/т' }),
@@ -40,7 +37,7 @@ const FACTOR_FMT: Record<FactorId, (v: number) => string> = {
   otherCosts: (v) => formatRub(v, { unit: '₽/га' }),
 };
 
-const C3 = { region: 'saratov', crop: 'sunflower' as CropId, from: 2025, to: 2026 };
+const C3 = { region: 'saratov', crop: 'wheat' as CropId, from: 2023, to: 2024 };
 
 export default function WhyPage() {
   // Повтор после ошибки загрузки — перемонтирование по ключу (кэш загрузчика ошибки не хранит)
@@ -124,7 +121,7 @@ function WhyContent({ onRetry }: { onRetry: () => void }) {
           <h2 id="why-periods" className="text-lg leading-tight sm:text-xl">
             {W.periods.title}
           </h2>
-          <p className="text-xs text-muted">{T_DATES_NOTE}</p>
+          <p className="text-xs text-muted">{WP.datesNote}</p>
         </div>
         <div className="mt-stack">
           <PeriodPicker
@@ -199,6 +196,7 @@ function WhyContent({ onRetry }: { onRetry: () => void }) {
                 <span>{W.waterfall.order}</span>
               </div>
               <Residual model={model} mode={mode} />
+              <YieldPlanNote model={model} />
             </div>
           </ChartFrame>
 
@@ -294,6 +292,22 @@ function Summary({ model, mode, showExample }: { model: WhyModel; mode: Waterfal
   );
 }
 
+/** Итогов урожайности за год нет — в расчёте план; при «план против плана» вклад урожайности 0. */
+function YieldPlanNote({ model }: { model: WhyModel }) {
+  const years = [model.yieldPlan.from ? model.from : null, model.yieldPlan.to ? model.to : null].filter((y): y is number => y !== null);
+  if (!years.length) return null;
+  return (
+    <ul className="mt-stack space-y-1">
+      {years.map((y) => (
+        <li key={y} className="flex flex-wrap items-center gap-2 text-[13px] text-ink/80">
+          <AssumptionBadge size="sm" />
+          <span>{texts.common.labels.yieldPlanFallback(String(y))}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Residual({ model, mode }: { model: WhyModel; mode: WaterfallMode }) {
   const a = model.analysis;
   const k = mode === 'perHa' ? 1 : a.areaHa;
@@ -369,6 +383,9 @@ function FactorTable({
                     <span key={side} className="text-right text-ink/80">
                       {FACTOR_FMT[c.factor](side === 'from' ? c.from : c.to)}
                       {dateOf(c.factor, side) && <span className="block text-[11.5px] text-muted">{dateOf(c.factor, side)}</span>}
+                      {c.factor === 'yield' && model.yieldPlan[side] && (
+                        <span className="block text-[11.5px] text-ochre">{texts.common.labels.yieldPlanFallbackShort}</span>
+                      )}
                     </span>
                   ))}
                   <span className="text-right">{c.changePct === null ? '—' : formatPct(c.changePct)}</span>
@@ -403,7 +420,10 @@ function FactorTable({
                   <StatusTag status={statusOfEffect(c.effectPerHa)} size="sm" />
                 </span>
                 <span className="mt-1 block text-[13px] text-ink/75">
-                  {FACTOR_FMT[c.factor](c.from)} → {FACTOR_FMT[c.factor](c.to)}
+                  {FACTOR_FMT[c.factor](c.from)}
+                  {c.factor === 'yield' && model.yieldPlan.from && ` (${texts.common.labels.yieldPlanFallbackShort})`} →{' '}
+                  {FACTOR_FMT[c.factor](c.to)}
+                  {c.factor === 'yield' && model.yieldPlan.to && ` (${texts.common.labels.yieldPlanFallbackShort})`}
                   {c.changePct !== null && <> ({formatPct(c.changePct)})</>}
                 </span>
                 {dateOf(c.factor, 'from') && (

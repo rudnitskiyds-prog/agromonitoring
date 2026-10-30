@@ -2,7 +2,7 @@
 // Формулы — только из src/lib/finance.ts; здесь лишь выбор дат и рядов.
 import { CROPS, REGIONS } from '../../config/regions';
 import { factorAnalysis, periodStateAt } from '../../lib/finance';
-import { alignedSeasonDate, numberAt, validPoints } from '../../lib/series';
+import { alignedSeasonDate, numberAt, validPoints, yieldAt } from '../../lib/series';
 import { formatDate } from '../../lib/format';
 import { buildDefaultPlan } from '../../store/farm';
 import type { CropId, CropPlan, DataSeries, FactorAnalysis, FactorId, FarmProfile, GeoScope, MarketData, RegionId } from '../../types';
@@ -59,16 +59,29 @@ export function planFor(profile: FarmProfile, region: RegionId, crop: CropId): {
   return { plan: buildDefaultPlan(region, crop, EXAMPLE_AREA_HA), fromProfile: false };
 }
 
-/** Год сезона доступен, если на его дату есть цена, солярка и урожайность за этот год. */
+/**
+ * Год сезона доступен, если в этом году есть цена и солярка (на дату сезона или раньше в том же году).
+ * Урожайность не обязательна: без итогов Росстата берётся план (подпись yieldPlanFallback).
+ */
 export function availableYears(data: MarketData): number[] {
-  const years = validPoints(data.yield.series).map((p) => Number(p.date.slice(0, 4)));
+  const years = [...new Set(validPoints(data.price.series).map((p) => Number(p.date.slice(0, 4))))].sort((a, b) => a - b);
   return years.filter((y) => {
     const d = seasonDate(y);
-    // Каждая точка — из своего сезона: цену или солярку прошлого года за этот сезон не выдаём.
-    // Цена — любой месяц этого года не позже даты сезона (пару выравнивает alignedSeasonDate).
+    // Каждая точка — из своего сезона: цену или солярку прошлого года за этот сезон не выдаём
     const sameYear = (p: { date: string } | null) => p !== null && p.date.startsWith(String(y));
-    return sameYear(numberAt(data.price, d)) && sameYear(numberAt(data.diesel, d)) && sameYear(numberAt(data.yield, d));
+    return sameYear(numberAt(data.price, d)) && sameYear(numberAt(data.diesel, d));
   });
+}
+
+/** Есть ли в ряду итог урожайности за год сезона. */
+export const hasYield = (data: MarketData, year: number) => yieldAt(data.yield, seasonDate(year)) !== null;
+
+/** Пара по умолчанию: последняя пара соседних сезонов, где реальная урожайность есть в обоих годах. */
+export function defaultPair(data: MarketData, years: number[]): [number, number] {
+  for (let i = years.length - 1; i > 0; i--) {
+    if (hasYield(data, years[i]) && hasYield(data, years[i - 1])) return [years[i - 1], years[i]];
+  }
+  return [years[years.length - 2], years[years.length - 1]];
 }
 
 export interface WhyModel {
@@ -79,6 +92,8 @@ export interface WhyModel {
   to: number;
   /** Даты сравнения: один и тот же месяц цены в обоих сезонах (alignedSeasonDate) */
   dates: { from: string; to: string };
+  /** true — итогов урожайности за год нет, в расчёте плановая урожайность */
+  yieldPlan: { from: boolean; to: boolean };
   analysis: FactorAnalysis;
 }
 
@@ -94,9 +109,9 @@ export function buildModel(
   const { plan, fromProfile } = planFor(profile, sel.region, sel.crop);
   const years = availableYears(data);
   if (years.length < 2) return { ok: false, reason: 'noYears', years, plan, fromProfile };
-  const last = years[years.length - 1];
-  const to = sel.to !== null && years.includes(sel.to) ? sel.to : last;
-  const prev = years.filter((y) => y < to).pop() ?? years[0];
+  const [defFrom, defTo] = defaultPair(data, years);
+  const to = sel.to !== null && years.includes(sel.to) ? sel.to : defTo;
+  const prev = sel.to !== null && years.includes(sel.to) ? (years.filter((y) => y < to).pop() ?? years[0]) : defFrom;
   const from = sel.from !== null && years.includes(sel.from) ? sel.from : prev;
   if (from === to) return { ok: false, reason: 'same', years, plan, fromProfile };
   // Один и тот же месяц цены в обоих сезонах; солярка и урожайность — последнее значение на эту дату
@@ -109,7 +124,8 @@ export function buildModel(
   const base = periodStateAt(plan, data, dates.from, { yieldFromData: true, label: label(dates.from) });
   const current = periodStateAt(plan, data, dates.to, { yieldFromData: true, label: label(dates.to) });
   const analysis = factorAnalysis(base, current, plan.areaHa, plan.crop);
-  return { ok: true, model: { plan, fromProfile, years, from, to, dates, analysis } };
+  const yieldPlan = { from: yieldAt(data.yield, dates.from) === null, to: yieldAt(data.yield, dates.to) === null };
+  return { ok: true, model: { plan, fromProfile, years, from, to, dates, yieldPlan, analysis } };
 }
 
 /** С кем сравнивать показатель на шаге «Регион»: для урожайности — регионы и Россия, для цен — только регионы. */

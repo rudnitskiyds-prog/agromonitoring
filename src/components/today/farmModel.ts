@@ -6,7 +6,7 @@ import { sourceOf } from '../../lib/data';
 import { CHANGE_NOISE_PCT } from '../../lib/signals';
 import { computeFarmEconomics, factorAnalysis, periodStateAt } from '../../lib/finance';
 import { MONTHS_NOM } from '../../lib/format';
-import { monthAgo, numberAt, shiftMonths } from '../../lib/series';
+import { monthAgo, numberAt, shiftMonths, yieldAt } from '../../lib/series';
 import type {
   CropId,
   CropPlan,
@@ -115,6 +115,11 @@ export interface TodayModel {
    * следующий месяц). Значение — этот неопубликованный месяц, именительный падеж строчными: «октябрь».
    */
   priceNotPublished: Partial<Record<CropId, string>>;
+  /**
+   * «К прошлому году»: годы, за которые у Росстата ещё нет итогов урожая и periodStateAt взял план
+   * («2025–2026» или «2026»). Вклад урожая по такой культуре — 0.
+   */
+  yieldPlanFallback: Partial<Record<CropId, string>>;
   totalAreaHa: number;
   econ: FarmEconomics;
 }
@@ -143,6 +148,13 @@ export function buildTodayModel(profile: FarmProfile, market: FarmMarket, period
       priceNotPublished[plan.crop] = MONTHS_NOM[Number(next.slice(5, 7)) - 1];
     }
   }
+  const yieldPlanFallback: TodayModel['yieldPlanFallback'] = {};
+  if (yieldFromData) {
+    for (const { plan, data } of market.crops) {
+      const missing = [baseDate, date].filter((d) => yieldAt(data.yield, d) === null).map((d) => d.slice(0, 4));
+      if (missing.length) yieldPlanFallback[plan.crop] = [...new Set(missing)].join('–');
+    }
+  }
   const factorTotals: Record<FactorId, number> = { price: 0, yield: 0, diesel: 0, otherCosts: 0 };
   for (const a of analyses) for (const c of a.contributions) factorTotals[c.factor] += c.effectTotal;
   return {
@@ -153,6 +165,7 @@ export function buildTodayModel(profile: FarmProfile, market: FarmMarket, period
     totalChange: analyses.reduce((s, a) => s + a.totalChange, 0),
     factorTotals,
     priceNotPublished,
+    yieldPlanFallback,
     totalAreaHa: profile.crops.reduce((s, c) => s + c.areaHa, 0),
     econ: computeFarmEconomics(profile, market.prices),
   };

@@ -34,6 +34,7 @@ const C = texts.common;
 
 const VERDICT_LABEL: Record<SignalStatus, string> = M.verdict.labels;
 const L_SEASON_TITLE = texts.home.seasonStrip.title;
+const L_DIESEL_REGION = (region: string, month: string, price: string) => M.dieselChart.regionMonth(region, month, `${price} ₽/л`);
 
 /** «Цена по месяцам: январь 2025 – сентябрь 2026» — период графика по факту. */
 function priceLead(s: DataSeries): string {
@@ -510,6 +511,10 @@ function DieselSection({
   farmStatus: 'loading' | 'error' | 'ready';
   onRetry: () => void;
 }) {
+  // Регион — помесячно (Росстат публикует недельные цены только по России): одна строка, не вторая линия —
+  // недельные и месячные точки на одном графике рвали бы линию. Отказ ряда не ломает раздел.
+  const regional = useSeries({ indicator: 'diesel_price', region, frequency: 'month' });
+  const regionLast = regional.status === 'ready' && regional.data.region !== 'russia' ? numberAt(regional.data) : null;
   const last = numberAt(diesel);
   const before = last ? monthAgo(last.date) : null;
   const ch = last && before ? changePct(diesel, before, last.date) : null;
@@ -570,6 +575,14 @@ function DieselSection({
         lead={
           <>
             {M.dieselChart.lead} <span className="num font-semibold text-ink">{changeText}</span>
+            {regionLast && (
+              <>
+                {'. '}
+                <span className="num">
+                  {L_DIESEL_REGION(REGIONS[region]?.shortName ?? '', formatDate(regionLast.date, 'month'), formatNumber(regionLast.value, 2))}
+                </span>
+              </>
+            )}
             {mainRow && (
               <>
                 {'. '}
@@ -580,7 +593,7 @@ function DieselSection({
           </>
         }
         unit={M.dieselChart.yAxis}
-        source={sourceOf(diesel)}
+        source={regional.status === 'ready' ? [sourceOf(diesel), sourceOf(regional.data)] : sourceOf(diesel)}
       >
         <LineChart
           series={series}

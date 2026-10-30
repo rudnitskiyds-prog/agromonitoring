@@ -3,7 +3,7 @@
 // графиков с общей шкалой лет, без второй оси; осадки сезона по месяцам против нормы; прогноз на 16 дней с рисками.
 // Сценарий С3 приходит сюда с ?region=saratov&crop=sunflower.
 import { ArrowRight, CloudOff, Radio } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Button from '../components/Button';
 import ChartFrame from '../components/ChartFrame';
 import ForecastStrip, { RiskList } from '../components/harvest/ForecastStrip';
@@ -27,6 +27,7 @@ import type { CropId, DataSeries, RegionId, SeriesKey } from '../types';
 const H = texts.harvest;
 const Y = H.yieldChart;
 const C = texts.common;
+const L_NO_YIELD_YET = (from: number, to: number) => Y.noOfficial(from === to ? String(from) : `${from}–${to}`);
 
 export default function HarvestPage() {
   const { profile } = useFarmProfile();
@@ -36,6 +37,8 @@ export default function HarvestPage() {
   // Блоки независимы: история (урожай + погода ERA5) и прогноз. Повтор — перемонтирование по ключу.
   const [retry, setRetry] = useState({ history: 0, forecast: 0 });
   const bump = (k: keyof typeof retry) => () => setRetry((r) => ({ ...r, [k]: r[k] + 1 }));
+  // Год последнего итога урожайности — для ссылки «Разобрать причины» (С3: 2023 → 2024)
+  const [yieldYear, setYieldYear] = useState<number | null>(null);
 
   return (
     <main className="mx-auto max-w-page px-4 pb-section-lg pt-page-top sm:px-6 sm:pt-page-top-lg lg:px-8">
@@ -53,17 +56,27 @@ export default function HarvestPage() {
         />
       </header>
 
-      <HistoryArea key={`h-${region}-${crop}-${retry.history}`} region={region} crop={crop} onRetry={bump('history')} />
+      <HistoryArea key={`h-${region}-${crop}-${retry.history}`} region={region} crop={crop} onRetry={bump('history')} onYieldYear={setYieldYear} />
 
       <ForecastBlock key={`f-${region}-${retry.forecast}`} region={region} onRetry={bump('forecast')} />
 
-      <SummaryBlock crop={crop} region={region} />
+      <SummaryBlock crop={crop} region={region} yieldYear={yieldYear} />
     </main>
   );
 }
 
 // ── Урожай и погода сезона по годам ─────────────────────────────────────────
-function HistoryArea({ region, crop, onRetry }: { region: RegionId; crop: CropId; onRetry: () => void }) {
+function HistoryArea({
+  region,
+  crop,
+  onRetry,
+  onYieldYear,
+}: {
+  region: RegionId;
+  crop: CropId;
+  onRetry: () => void;
+  onYieldYear: (y: number | null) => void;
+}) {
   const keys: SeriesKey[] = [
     { indicator: 'yield', region, crop, frequency: 'year' },
     { indicator: 'precipitation', region, frequency: 'month' },
@@ -96,6 +109,7 @@ function HistoryArea({ region, crop, onRetry }: { region: RegionId; crop: CropId
       rain={data.data[1]}
       temp={data.data[2]}
       active={data.data[3]}
+      onYieldYear={onYieldYear}
     />
   );
 }
@@ -107,6 +121,7 @@ function HistoryBlocks({
   rain,
   temp,
   active,
+  onYieldYear,
 }: {
   crop: CropId;
   region: RegionId;
@@ -114,6 +129,7 @@ function HistoryBlocks({
   rain: DataSeries;
   temp: DataSeries;
   active: DataSeries;
+  onYieldYear: (y: number | null) => void;
 }) {
   const cropCfg = CROPS[crop];
   const model = useMemo(() => {
@@ -126,10 +142,15 @@ function HistoryBlocks({
     const lastYear = Math.max(...allYears);
     const years = Array.from({ length: lastYear - first + 1 }, (_, i) => first + i);
     const range = normYearsOf(rain);
-    const rainRows = seasonMonthRows(rain, lastYear, undefined, range);
-    // Критическое окно: месяц перед уборкой и уборка — по календарю культуры в регионе
-    const critical = criticalWindow(region, crop, lastYear);
     const lastY = yPts[yPts.length - 1];
+    // Год последнего итога урожайности (Росстат, сейчас 2024): для него — осадки по месяцам и главная причина.
+    const yieldYear = lastY ? Number(lastY.date.slice(0, 4)) : null;
+    const yieldRows = yieldYear !== null ? seasonMonthRows(rain, yieldYear, undefined, range) : [];
+    // Критическое окно: месяц перед уборкой и уборка — по календарю культуры в регионе
+    const yieldCritical = yieldYear !== null ? criticalWindow(region, crop, yieldYear) : [];
+    // Текущий сезон: осадки по месяцам без вывода — итогов урожая ещё нет
+    const currentRows = seasonMonthRows(rain, lastYear, undefined, range);
+    const currentCritical = criticalWindow(region, crop, lastYear);
     const prevY = yPts[yPts.length - 2];
     const yoy = lastY && prevY ? changePct(yieldS, prevY.date, lastY.date) : null;
     const best = [...yPts].sort((a, b) => b.value - a.value)[0];
@@ -153,12 +174,16 @@ function HistoryBlocks({
         temp: normOfYears(tempY, range),
         active: normOfYears(activeY, range),
       },
-      rainRows,
-      critical,
-      cause: mainWeatherCause(rainRows, critical),
+      yieldYear,
+      yieldRows,
+      yieldCritical,
+      cause: yieldYear !== null ? mainWeatherCause(yieldRows, yieldCritical) : null,
+      currentRows,
+      currentCritical,
     };
   }, [yieldS, rain, temp, active, region, crop]);
 
+  useEffect(() => onYieldYear(model.yieldYear), [model.yieldYear, onYieldYear]);
   const { range } = model;
   const norm = Y.normRange(String(range.from), String(range.to));
   const weatherSrc = sourceOf(rain);
@@ -180,7 +205,7 @@ function HistoryBlocks({
           </>
         }
         source={[sourceOf(yieldS), weatherSrc]}
-        sourceNote={yieldS.demo && model.lastYieldYear ? `${Y.prelim(model.lastYieldYear)} ${Y.prelimHint}` : undefined}
+        sourceNote={model.yieldYear !== null && model.yieldYear < model.lastYear ? L_NO_YIELD_YET(model.yieldYear + 1, model.lastYear) : undefined}
       >
         <div className="grid gap-x-4 gap-y-6 px-2 pb-2 pt-3 sm:grid-cols-2 xl:grid-cols-4">
           <YearMiniChart
@@ -191,7 +216,7 @@ function HistoryBlocks({
             kind="line"
             colorVar={cropCfg.colorVar}
             norm={model.norms.yield}
-            normLabel={Y.avgRange(String(range.from), String(range.to))}
+            normLabel={Y.avgRange(String(range.from), String(Math.min(range.to, model.yieldYear ?? range.to)))}
             formatValue={(v) => formatNumber(v, 1)}
             note={model.yoy != null && model.prevYear ? Y.vsPrev(model.prevYear, formatPct(model.yoy, { fractionDigits: 0 })) : undefined}
           />
@@ -231,8 +256,29 @@ function HistoryBlocks({
         </div>
       </ChartFrame>
 
+      {model.yieldYear !== null && model.yieldYear < model.lastYear && (
+        <div className="mt-block">
+          <RainLedger
+            rows={model.yieldRows}
+            year={model.yieldYear}
+            range={range}
+            dataTo={rain.updated_at}
+            source={weatherSrc}
+            critical={model.yieldCritical}
+            cause={model.cause}
+          />
+        </div>
+      )}
       <div className="mt-block">
-        <RainLedger rows={model.rainRows} year={model.lastYear} range={range} dataTo={rain.updated_at} source={weatherSrc} critical={model.critical} cause={model.cause} />
+        <RainLedger
+          rows={model.currentRows}
+          year={model.lastYear}
+          range={range}
+          dataTo={rain.updated_at}
+          source={weatherSrc}
+          critical={model.currentCritical}
+          cause={model.yieldYear === model.lastYear ? model.cause : undefined}
+        />
       </div>
     </>
   );
@@ -301,9 +347,9 @@ function ForecastBlock({ region, onRetry }: { region: RegionId; onRetry: () => v
 }
 
 // ── Вывод ───────────────────────────────────────────────────────────────────
-function SummaryBlock({ crop, region }: { crop: CropId; region: RegionId }) {
+function SummaryBlock({ crop, region, yieldYear }: { crop: CropId; region: RegionId; yieldYear: number | null }) {
   const S = H.summary;
-  const year = new Date().getFullYear();
+  const year = yieldYear ?? new Date().getFullYear();
   return (
     <section
       aria-labelledby="harvest-summary"

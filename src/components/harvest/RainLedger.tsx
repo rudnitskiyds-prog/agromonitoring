@@ -26,8 +26,9 @@ export interface RainLedgerProps {
   source: SourceRef;
   /** Критическое окно: месяц перед уборкой и уборка (criticalWindow из lib/climate) */
   critical: YearMonth[];
-  /** Главная погодная причина в критическом окне (mainWeatherCause); null — явной нет */
-  cause: WeatherCause | null;
+  /** Главная погодная причина в критическом окне (mainWeatherCause); null — явной нет;
+   *  undefined — вывод не показываем (сезон, по которому итогов урожая ещё нет) */
+  cause?: WeatherCause | null;
 }
 
 export default function RainLedger({ rows, year, range, dataTo, source, critical, cause }: RainLedgerProps) {
@@ -39,9 +40,9 @@ export default function RainLedger({ rows, year, range, dataTo, source, critical
   const causePct = cause ? pctAbs(cause.deviationPct) : '';
 
   return (
-    <section aria-labelledby="rain-ledger-title" className="rounded-card border border-line bg-surface">
+    <section aria-labelledby={`rain-ledger-title-${year}`} className="rounded-card border border-line bg-surface">
       <div className="px-card pt-card sm:px-card-lg sm:pt-card-lg">
-        <h2 id="rain-ledger-title" className="text-xl leading-tight sm:text-[22px]">
+        <h2 id={`rain-ledger-title-${year}`} className="text-xl leading-tight sm:text-[22px]">
           {L.title(String(year))}
         </h2>
         <p className="mt-1.5 max-w-prose text-[15px] leading-snug text-ink/80">{L.lead(from, to)}</p>
@@ -118,7 +119,8 @@ export default function RainLedger({ rows, year, range, dataTo, source, critical
         })}
       </ol>
 
-      <p className="flex items-start gap-2.5 px-4 py-4 text-[15px] leading-snug sm:px-6">
+      {cause !== undefined && (
+      <p className="flex items-start gap-2.5 px-card py-card text-[15px] leading-snug sm:px-card-lg">
         {cause?.kind === 'dry' ? (
           <TriangleAlert size={18} className="mt-0.5 shrink-0 text-ink" aria-hidden />
         ) : cause?.kind === 'wet' ? (
@@ -134,7 +136,8 @@ export default function RainLedger({ rows, year, range, dataTo, source, critical
               : F.noMainCause}
         </span>
       </p>
-      <p className="px-card pb-stack text-xs text-muted sm:px-card-lg">
+      )}
+      <p className="px-card py-stack text-xs text-muted sm:px-card-lg">
         {L.dryHint(formatPct(Math.abs(DRY_PCT), { sign: false, fractionDigits: 0 }))} {L.dataTo(formatDate(dataTo, 'long'))}.
       </p>
       <SourceNote source={source} className="border-t border-line px-card py-stack sm:px-card-lg" />
