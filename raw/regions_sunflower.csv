@@ -1,0 +1,17 @@
+indicator;region;year;value
+gross_harvest;krasnodar;2020;921.8
+gross_harvest;krasnodar;2022;1303.1
+gross_harvest;krasnodar;2023;1320.5
+gross_harvest;krasnodar;2024;931.6
+gross_harvest;saratov;2020;1749.0
+gross_harvest;saratov;2022;2216.8
+gross_harvest;saratov;2023;2104.4
+gross_harvest;saratov;2024;2048.1
+yield;krasnodar;2020;19.9
+yield;krasnodar;2022;25.7
+yield;krasnodar;2023;27.6
+yield;krasnodar;2024;19.3
+yield;saratov;2020;12.3
+yield;saratov;2022;15.3
+yield;saratov;2023;14.9
+yield;saratov;2024;14.4

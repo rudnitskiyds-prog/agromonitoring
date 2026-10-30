@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T06:49:12Z",
+ "generated_at": "2026-10-30T07:33:22Z",
  "files": [
   {
    "indicator": "active_temp_sum",
@@ -23,6 +23,26 @@
   },
   {
    "indicator": "diesel_price",
+   "region": "krasnodar",
+   "crop": null,
+   "frequency": "month",
+   "file": "diesel_price_krasnodar_month.json",
+   "demo": false,
+   "source": "Росстат: Средние потребительские цены на отдельные товары и услуги по РФ, федеральным округам, субъектам РФ и обследуемым городам (дизельное топливо)",
+   "updated_at": "2026-09-01"
+  },
+  {
+   "indicator": "diesel_price",
+   "region": "russia",
+   "crop": null,
+   "frequency": "month",
+   "file": "diesel_price_russia_month.json",
+   "demo": false,
+   "source": "Росстат: Средние потребительские цены на отдельные товары и услуги по РФ, федеральным округам, субъектам РФ и обследуемым городам (дизельное топливо)",
+   "updated_at": "2026-09-01"
+  },
+  {
+   "indicator": "diesel_price",
    "region": "russia",
    "crop": null,
    "frequency": "week",
@@ -30,6 +50,16 @@
    "demo": false,
    "source": "Росстат: Еженедельные средние потребительские цены на отдельные товары и услуги по Российской Федерации",
    "updated_at": "2026-10-26"
+  },
+  {
+   "indicator": "diesel_price",
+   "region": "saratov",
+   "crop": null,
+   "frequency": "month",
+   "file": "diesel_price_saratov_month.json",
+   "demo": false,
+   "source": "Росстат: Средние потребительские цены на отдельные товары и услуги по РФ, федеральным округам, субъектам РФ и обследуемым городам (дизельное топливо)",
+   "updated_at": "2026-09-01"
   },
   {
    "indicator": "dry_days",
@@ -57,9 +87,9 @@
    "crop": "barley",
    "frequency": "year",
    "file": "gross_harvest_krasnodar_barley_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "gross_harvest",
@@ -67,9 +97,9 @@
    "crop": "corn",
    "frequency": "year",
    "file": "gross_harvest_krasnodar_corn_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "gross_harvest",
@@ -77,9 +107,9 @@
    "crop": "sunflower",
    "frequency": "year",
    "file": "gross_harvest_krasnodar_sunflower_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "gross_harvest",
@@ -87,9 +117,49 @@
    "crop": "wheat",
    "frequency": "year",
    "file": "gross_harvest_krasnodar_wheat_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "russia",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "gross_harvest_russia_barley_year.json",
+   "demo": false,
+   "source": "Росстат: Валовые сборы сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "russia",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "gross_harvest_russia_corn_year.json",
+   "demo": false,
+   "source": "Росстат: Валовые сборы сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "russia",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "gross_harvest_russia_sunflower_year.json",
+   "demo": false,
+   "source": "Росстат: Валовые сборы сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "gross_harvest",
+   "region": "russia",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "gross_harvest_russia_wheat_year.json",
+   "demo": false,
+   "source": "Росстат: Валовые сборы сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "gross_harvest",
@@ -97,9 +167,9 @@
    "crop": "barley",
    "frequency": "year",
    "file": "gross_harvest_saratov_barley_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "gross_harvest",
@@ -107,9 +177,9 @@
    "crop": "corn",
    "frequency": "year",
    "file": "gross_harvest_saratov_corn_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "gross_harvest",
@@ -117,9 +187,9 @@
    "crop": "sunflower",
    "frequency": "year",
    "file": "gross_harvest_saratov_sunflower_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "gross_harvest",
@@ -127,9 +197,9 @@
    "crop": "wheat",
    "frequency": "year",
    "file": "gross_harvest_saratov_wheat_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Валовой сбор сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "key_rate",
@@ -168,7 +238,7 @@
    "frequency": "month",
    "file": "producer_price_krasnodar_barley_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -178,7 +248,7 @@
    "frequency": "month",
    "file": "producer_price_krasnodar_corn_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -188,7 +258,7 @@
    "frequency": "month",
    "file": "producer_price_krasnodar_sunflower_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -198,7 +268,7 @@
    "frequency": "month",
    "file": "producer_price_krasnodar_wheat_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -248,7 +318,7 @@
    "frequency": "month",
    "file": "producer_price_saratov_barley_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -258,7 +328,7 @@
    "frequency": "month",
    "file": "producer_price_saratov_corn_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -268,7 +338,7 @@
    "frequency": "month",
    "file": "producer_price_saratov_sunflower_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -278,7 +348,7 @@
    "frequency": "month",
    "file": "producer_price_saratov_wheat_month.json",
    "demo": false,
-   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода); ЕМИСС 57693",
    "updated_at": "2026-10-23"
   },
   {
@@ -287,9 +357,9 @@
    "crop": "barley",
    "frequency": "year",
    "file": "sown_area_krasnodar_barley_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "sown_area",
@@ -297,9 +367,9 @@
    "crop": "corn",
    "frequency": "year",
    "file": "sown_area_krasnodar_corn_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "sown_area",
@@ -307,9 +377,9 @@
    "crop": "sunflower",
    "frequency": "year",
    "file": "sown_area_krasnodar_sunflower_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "sown_area",
@@ -317,9 +387,49 @@
    "crop": "wheat",
    "frequency": "year",
    "file": "sown_area_krasnodar_wheat_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "russia",
+   "crop": "barley",
+   "frequency": "year",
+   "file": "sown_area_russia_barley_year.json",
+   "demo": false,
+   "source": "Росстат: Посевные площади сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "russia",
+   "crop": "corn",
+   "frequency": "year",
+   "file": "sown_area_russia_corn_year.json",
+   "demo": false,
+   "source": "Росстат: Посевные площади сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "russia",
+   "crop": "sunflower",
+   "frequency": "year",
+   "file": "sown_area_russia_sunflower_year.json",
+   "demo": false,
+   "source": "Росстат: Посевные площади сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
+  },
+  {
+   "indicator": "sown_area",
+   "region": "russia",
+   "crop": "wheat",
+   "frequency": "year",
+   "file": "sown_area_russia_wheat_year.json",
+   "demo": false,
+   "source": "Росстат: Посевные площади сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "sown_area",
@@ -327,9 +437,9 @@
    "crop": "barley",
    "frequency": "year",
    "file": "sown_area_saratov_barley_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "sown_area",
@@ -337,9 +447,9 @@
    "crop": "corn",
    "frequency": "year",
    "file": "sown_area_saratov_corn_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "sown_area",
@@ -347,9 +457,9 @@
    "crop": "sunflower",
    "frequency": "year",
    "file": "sown_area_saratov_sunflower_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "sown_area",
@@ -357,9 +467,9 @@
    "crop": "wheat",
    "frequency": "year",
    "file": "sown_area_saratov_wheat_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Посевные площади сельскохозяйственных культур, хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "temperature_mean",
@@ -387,9 +497,9 @@
    "crop": "barley",
    "frequency": "year",
    "file": "yield_krasnodar_barley_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -397,9 +507,9 @@
    "crop": "corn",
    "frequency": "year",
    "file": "yield_krasnodar_corn_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -407,9 +517,9 @@
    "crop": "sunflower",
    "frequency": "year",
    "file": "yield_krasnodar_sunflower_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -417,9 +527,9 @@
    "crop": "wheat",
    "frequency": "year",
    "file": "yield_krasnodar_wheat_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -427,9 +537,9 @@
    "crop": "barley",
    "frequency": "year",
    "file": "yield_russia_barley_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат: Урожайность сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -437,9 +547,9 @@
    "crop": "corn",
    "frequency": "year",
    "file": "yield_russia_corn_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат: Урожайность сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -447,9 +557,9 @@
    "crop": "sunflower",
    "frequency": "year",
    "file": "yield_russia_sunflower_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат: Урожайность сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -457,9 +567,9 @@
    "crop": "wheat",
    "frequency": "year",
    "file": "yield_russia_wheat_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат: Урожайность сельскохозяйственных культур по Российской Федерации (хозяйства всех категорий)",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -467,9 +577,9 @@
    "crop": "barley",
    "frequency": "year",
    "file": "yield_saratov_barley_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -477,9 +587,9 @@
    "crop": "corn",
    "frequency": "year",
    "file": "yield_saratov_corn_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -487,9 +597,9 @@
    "crop": "sunflower",
    "frequency": "year",
    "file": "yield_saratov_sunflower_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   },
   {
    "indicator": "yield",
@@ -497,9 +607,9 @@
    "crop": "wheat",
    "frequency": "year",
    "file": "yield_saratov_wheat_year.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-15"
+   "demo": false,
+   "source": "Росстат / ЕМИСС: Урожайность сельскохозяйственных культур (в расчете на убранную площадь), хозяйства всех категорий",
+   "updated_at": "2026-10-30"
   }
  ]
 }

@@ -8,3 +8,8 @@ test-results/
 playwright-report/
 *.local
 *.tsbuildinfo
+
+# Скачанные выгрузки Росстата — их заново получает scripts/collect.py; в git только небольшие кэши
+raw/*.xlsx
+raw/*.xls
+raw/*.pdf

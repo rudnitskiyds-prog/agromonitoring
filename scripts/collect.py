@@ -12,7 +12,12 @@
  3. Разбирает файлы и пишет ряды в public/data (demo: false):
       producer_price_{регион}_{культура}_month   — субъекты из src/config/regions.ts, только реальные месяцы (с 2025);
       producer_price_russia_{культура}_month     — РФ помесячно с 2021;
-      diesel_price_russia_week                   — дизтопливо по РФ, понедельно с 2022.
+      diesel_price_russia_week                   — дизтопливо по РФ, понедельно с 2022;
+      diesel_price_{регион|russia}_month         — потребительская цена дизтоплива по субъектам, помесячно с 2021
+                                                   (файлы sred_potreb_cen_*.xlsx; по регионам недельных данных Росстат не публикует);
+      yield / gross_harvest / sown_area          — по Краснодарскому краю и Саратовской области (ЕМИСС 31533, 30950, 31328)
+                                                   и по РФ (xls Росстата uroj_, val_, posev_pl); ряды заканчиваются на последнем реальном годе;
+      producer_price по субъектам дополнены месяцами 2020–2024 из ЕМИСС 57693.
  4. Пересобирает index.json и запускает validate_data.py.
 
 Загрузка идёт через urllib (ssl): requests/urllib3 на системном LibreSSL 2.8 (macOS) падает на getpeercert()
@@ -28,11 +33,14 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import OrderedDict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import DATA_DIR, RAW_DIR, ROOT, build_manifest, make_series, validate_series, write_series  # noqa: E402
+import emiss  # noqa: E402,F401
+import collect_agro as agro  # noqa: E402
 
 PAGE_URL = "https://rosstat.gov.ru/statistics/price"
 CA_BUNDLE = ROOT / "scripts" / "certs" / "russian_ca_bundle.pem"
@@ -140,7 +148,7 @@ def cell_value(v):
 def region_names():
     """{название субъекта: id} из src/config/regions.ts — новые регионы подхватываются автоматически."""
     txt = (ROOT / "src" / "config" / "regions.ts").read_text(encoding="utf-8")
-    res = dict(re.findall(r"id: '(\w+)',\s*name: '([^']+)'", txt))
+    res = dict(re.findall(r"id: '(\w+)',\s*name: '([^']+)',\s*shortName:", txt))
     return {name: rid for rid, name in res.items()}
 
 
@@ -228,12 +236,34 @@ def parse_diesel(path):
 CROP_NAME = {"wheat": "пшеница", "barley": "ячмень", "sunflower": "семена подсолнечника", "corn": "кукуруза"}
 
 
-def build(cena_path, nedel_path):
+def _check(d, what):
+    errs = validate_series(d)
+    if errs:
+        raise CollectError("Ряд {} не прошёл проверку: {}".format(what, errs))
+
+
+def build(cena_path, nedel_path, offline=False):
     prices, updated = parse_prices(cena_path)
     cena_url = url_for(cena_path.name, PAGE_URL)
+    names = region_names()
     written = []
+    # регионы: месяцы 2021–2024 (и совпадающие 2025–2026) из ЕМИСС 57693; свежие месяцы — из файла cena_sx
+    em, em_meta = agro.emiss_prices(names, offline)
+    mism, from_emiss = {}, {}
+    for key, pts in em.items():
+        cur = prices.setdefault(key, {})
+        for k, v in pts.items():
+            if k < "2021-01-01":
+                continue
+            if cur.get(k) is not None and v is not None and abs(cur[k] - v) > 0.011:
+                mism[key] = mism.get(key, 0) + 1
+            if cur.get(k) is None and v is not None:
+                cur[k] = v
+                from_emiss.setdefault(key, []).append(k)
+            else:
+                cur.setdefault(k, v)
     for (scope, crop), pts in sorted(prices.items()):
-        points = sorted(pts.items())
+        points = sorted((k, v) for k, v in pts.items() if k >= "2021-01-01")
         first_real = next((i for i, (_, v) in enumerate(points) if v is not None), None)
         if first_real is None:
             continue
@@ -244,11 +274,15 @@ def build(cena_path, nedel_path):
                 "Только месяцы, опубликованные Росстатом ({} … {}); демо-ряды с ними не склеены. Пропуски («...», «-») — null: {}.").format(
             cena_path.name, where, CROP_NAME[crop], CROP_CODES[crop], points[0][0][:7], points[-1][0][:7],
             ", ".join(gaps) if gaps else "нет")
-        d = make_series("producer_price", scope, crop, "руб./т", PRICE_SOURCE, cena_url,
+        source, url = PRICE_SOURCE, cena_url
+        if scope != "russia":
+            n_em = len(from_emiss.get((scope, crop), []))
+            note += (" Месяцы до 2025 г. ({} точек) и недостающие взяты из ЕМИСС (показатель 57693, выгрузка raw/emiss_57693.json); "
+                     "на пересечении с файлом cena_sx значения совпадают (расхождений: {}).").format(n_em, mism.get((scope, crop), 0))
+            source = PRICE_SOURCE + "; ЕМИСС 57693"
+        d = make_series("producer_price", scope, crop, "руб./т", source, url,
                         updated or date.today().isoformat(), "month", False, points, note=note)
-        errs = validate_series(d)
-        if errs:
-            raise CollectError("Ряд {} {} не прошёл проверку: {}".format(scope, crop, errs))
+        _check(d, "цены {} {}".format(scope, crop))
         written.append((write_series(d), d))
 
     dsr, collisions, last_obs = parse_diesel(nedel_path)
@@ -265,11 +299,88 @@ def build(cena_path, nedel_path):
         raise CollectError("Ряд дизеля не прошёл проверку: {}".format(errs))
     written.append((write_series(d), d))
 
-    for rid in set(region_names().values()):  # региональные демо-ряды дизеля заменены средним по РФ
+    for rid in set(names.values()):  # региональные демо-ряды дизеля заменены средним по РФ
         old = DATA_DIR / "diesel_price_{}_week.json".format(rid)
         if old.exists() and json.loads(old.read_text(encoding="utf-8")).get("demo") is True:
             old.unlink()
             print("удалён демо-ряд", old.name)
+
+    written += build_crops(names, offline)
+    written += build_diesel_monthly(names, offline)
+    return written
+
+
+UNITS = {"yield": "ц/га", "gross_harvest": "тыс. т", "sown_area": "тыс. га"}
+EMISS_URL = {"yield": ("31533", "Урожайность сельскохозяйственных культур (в расчете на убранную площадь)"),
+             "gross_harvest": ("30950", "Валовой сбор сельскохозяйственных культур"),
+             "sown_area": ("31328", "Посевные площади сельскохозяйственных культур")}
+RF_FILES = {"yield": ("uroj_.xls", "Урожайность сельскохозяйственных культур по Российской Федерации"),
+            "gross_harvest": ("val_.xls", "Валовые сборы сельскохозяйственных культур по Российской Федерации"),
+            "sown_area": ("posev_pl.xls", "Посевные площади сельскохозяйственных культур по Российской Федерации")}
+
+
+def build_crops(names, offline):
+    em, metas = agro.emiss_crops(names, offline)
+    pdf = agro.pdf_sunflower(names, offline)
+    for (ind, rid, y), v in pdf.items():  # пробелы ЕМИСС по подсолнечнику (вес после доработки) закрываем сборником «Регионы России»
+        em.setdefault((ind, rid, "sunflower"), {}).setdefault(y, v)
+    rf = agro.rf_crops(offline)
+    written = []
+    for src in (em, rf):
+        for (ind, scope, crop), yrs in sorted(src.items()):
+            if not yrs:
+                continue
+            years = sorted(yrs)
+            points = [("{}-01-01".format(y), round(yrs[y], 2) if y in yrs else None) for y in range(years[0], years[-1] + 1)]
+            gaps = [y for y in range(years[0], years[-1] + 1) if y not in yrs]
+            if scope == "russia":
+                fname, title = RF_FILES[ind]
+                source = "Росстат: " + title + " (хозяйства всех категорий)"
+                url = agro.MEDIABANK + fname
+                upd = date.today().isoformat()
+                note = ("Реальные данные Росстата, файл {} (лист 1), Российская Федерация, хозяйства всех категорий, "
+                        "{} … {}.").format(fname, years[0], years[-1])
+            else:
+                iid, title = EMISS_URL[ind]
+                source = "Росстат / ЕМИСС: " + title + ", хозяйства всех категорий"
+                url = "https://www.fedstat.ru/indicator/" + iid
+                upd = metas[ind]["fetched_at"]
+                note = ("Реальные данные ЕМИСС (показатель {}, выгрузка raw/emiss_{}.json), хозяйства всех категорий, "
+                        "{} … {}.").format(iid, iid, years[0], years[-1])
+            if ind == "yield":
+                note += " Урожайность в расчёте на убранную площадь."
+            if ind == "gross_harvest" and scope != "russia":
+                note += " В ЕМИСС значения в тыс. ц, пересчитаны в тыс. т (÷10)."
+            if crop == "wheat":
+                note += " Пшеница озимая и яровая вместе."
+            if crop == "barley":
+                note += " Ячмень озимый и яровой вместе."
+            if crop == "sunflower" and ind != "sown_area":
+                note += " Подсолнечник в весе после доработки" + (
+                    "; годы, которых нет в ЕМИСС, — из сборника «Регионы России. Социально-экономические показатели 2025», табл. 14.14/14.15 (raw/regions_sunflower.csv)."
+                    if scope != "russia" else ".")
+            if gaps:
+                note += " Нет данных за {} (null).".format(", ".join(map(str, gaps)))
+            note += " Последний опубликованный год в источнике — {}; более поздние годы не достраиваются.".format(years[-1])
+            d = make_series(ind, scope, crop, UNITS[ind], source, url, upd, "year", False, points, note=note)
+            _check(d, "{} {} {}".format(ind, scope, crop))
+            written.append((write_series(d), d))
+    return written
+
+
+def build_diesel_monthly(names, offline):
+    data = agro.diesel_monthly(names, offline)
+    written = []
+    for scope, pts in sorted(data.items()):
+        points = sorted(pts.items())
+        where = "РФ в среднем" if scope == "russia" else "субъект РФ ({})".format(scope)
+        note = ("Реальные данные Росстата, файлы sred_potreb_cen_*.xlsx: средняя потребительская цена дизельного топлива, л, "
+                "на конец месяца, {}. Помесячно (недельных региональных данных Росстат в этих файлах не публикует).").format(where)
+        d = make_series("diesel_price", scope, None, "руб./л",
+                        "Росстат: Средние потребительские цены на отдельные товары и услуги по РФ, федеральным округам, субъектам РФ и обследуемым городам (дизельное топливо)",
+                        agro.PRICE_PAGE, points[-1][0], "month", False, points, note=note)
+        _check(d, "дизель {}".format(scope))
+        written.append((write_series(d), d))
     return written
 
 
@@ -279,8 +390,8 @@ def main():
     a = ap.parse_args()
     try:
         cena, nedel = latest_local() if a.offline else download()
-        written = build(cena, nedel)
-    except CollectError as e:
+        written = build(cena, nedel, a.offline)
+    except (CollectError, agro.AgroError, emiss.EmissError) as e:
         raise SystemExit("Ошибка: {}".format(e))
     m = build_manifest()
     for name, d in written:
