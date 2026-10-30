@@ -88,3 +88,15 @@ export function alignedSeasonDate(
   }
   return null;
 }
+
+/**
+ * Урожайность за год даты: значение годового ряда с датой 'YYYY-01-01' того же года, что и date.
+ * В отличие от valueAt, не берёт прошлые годы: за 2026 при последней точке 2024 вернёт null.
+ * null — за этот год данных нет (итогов ещё нет или пропуск).
+ */
+export function yieldAt(series: DataSeries, date: string): { value: number; year: number } | null {
+  const year = Number(date.slice(0, 4));
+  if (!Number.isFinite(year)) return null;
+  const p = validPoints(series.series).find((x) => Number(x.date.slice(0, 4)) === year);
+  return p ? { value: p.value, year } : null;
+}

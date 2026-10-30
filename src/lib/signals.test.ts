@@ -3,6 +3,7 @@ import type { DailyWeather, PeriodState, SignalContext } from '../types';
 import { ROUTES } from '../routes';
 import { DEMO_FARM } from '../store/farm';
 import { factorAnalysis } from './finance';
+import { formatRub } from './format';
 import { buildRegionalProfile, seasonalDeviation } from './seasonality';
 import type { DataSeries } from '../types';
 import { buildSignals, cropShortName, CROP_SHORT, detectWeatherRisks, formatDayRange, pickAdvice, RISK_SEASON_MONTHS, WEATHER_WORSE_PRIORITY } from './signals';
@@ -67,6 +68,9 @@ describe('detectWeatherRisks', () => {
 
 const wheat = DEMO_FARM.crops[0];
 const sun = DEMO_FARM.crops[1];
+// Плановая урожайность демо-хозяйства, т/га (допущение из farm.ts) — тесты от конкретных чисел не зависят.
+const tW = wheat.yieldCha.value / 10;
+const tS = sun.yieldCha.value / 10;
 const st = (pricePerT: number, dieselPerL: number, yieldCha: number, fuel: number): PeriodState => ({
   label: '',
   pricePerT,
@@ -128,8 +132,8 @@ describe('buildSignals', () => {
       ctx({ seasonality: [{ date: '2026-10-01', month: 10, currentPrice: 15900, normPrice: 15000, deviationPct: 6, status: 'better' }] }),
     );
     const sea = s.find((x) => x.kind === 'seasonality')!;
-    expect(p(sea.text)).toBe('Пшеница: цена на 6% выше обычной для октября — хорошее окно для продажи (+4 950 ₽ с гектара к обычной цене)');
-    expect(sea.effectRub).toBeCloseTo(900 * 5.5, 6);
+    expect(p(sea.text)).toBe(`Пшеница: цена на 6% выше обычной для октября — хорошее окно для продажи (${p(formatRub(900 * tW, { sign: true }))} с гектара к обычной цене)`);
+    expect(sea.effectRub).toBeCloseTo(900 * tW, 6);
     expect(sea.status).toBe('better');
   });
 
@@ -145,9 +149,9 @@ describe('buildSignals', () => {
     const sun = s.find((x) => x.id === 'seasonality-sunflower')!;
     const wh = s.find((x) => x.id === 'seasonality-wheat')!;
     expect(p(sun.text)).toMatch(/^Подсолнечник: цена на 10% ниже обычной для октября/);
-    expect(sun.effectRub).toBeCloseTo(-3800 * 2.6, 6); // урожайность подсолнечника 26 ц/га
+    expect(sun.effectRub).toBeCloseTo(-3800 * tS, 6); // плановая урожайность подсолнечника
     expect(p(wh.text)).toMatch(/^Пшеница: цена на 6% выше/);
-    expect(wh.effectRub).toBeCloseTo(900 * 5.5, 6);
+    expect(wh.effectRub).toBeCloseTo(900 * tW, 6);
   });
 
   it('погодный риск worse — наверху, effectRub null', () => {
@@ -205,6 +209,6 @@ describe('сигнал сезонности с региональным проф
     const sig = s.find((x) => x.id === 'seasonality-sunflower')!;
     expect(sig.status).toBe('better');
     expect(p(sig.text)).toMatch(/^Подсолнечник: цена на \d+(,\d)?% выше обычной для сентября — хорошее окно для продажи/);
-    expect(sig.effectRub).toBeCloseTo((dev.currentPrice - dev.normPrice) * 2.6, 6);
+    expect(sig.effectRub).toBeCloseTo((dev.currentPrice - dev.normPrice) * tS, 6);
   });
 });

@@ -57,6 +57,10 @@ describe('DEMO_FARM и допущения', () => {
     ]);
     expect(isFarmProfile(DEMO_FARM)).toBe(true);
   });
+  it('плановая урожайность — среднее Росстата за 2022–2024', () => {
+    expect(DEMO_FARM.crops[0].yieldCha.value).toBeCloseTo((67.45 + 56.19 + 63.09) / 3, 1);
+    expect(DEMO_FARM.crops[1].yieldCha.value).toBeCloseTo((25.66 + 27.62 + 19.3) / 3, 1);
+  });
   it('урожайность и все затраты помечены как допущения', () => {
     for (const c of DEMO_FARM.crops) {
       expect(c.yieldCha.assumption).toBe(true);

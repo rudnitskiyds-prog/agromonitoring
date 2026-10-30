@@ -29,7 +29,7 @@ import type {
   TornadoBar,
   WhatIfShifts,
 } from '../types';
-import { numberAt } from './series';
+import { numberAt, yieldAt } from './series';
 
 /** ц/га → т/га */
 export const chaToT = (cha: number): number => cha / 10;
@@ -155,7 +155,8 @@ export const factorAnalysis: FactorAnalysisFn = (base, current, areaHa, crop) =>
  * Состояние периода на дату. Цена продукции и цена дизеля — ПОСЛЕДНЕЕ ИЗВЕСТНОЕ значение ряда
  * с датой ≤ date, без усреднения: для месячного ряда цен — точка своего месяца (первое число),
  * для недельного ряда дизеля — последняя неделя на дату. Урожайность — из плана, а при
- * yieldFromData — из годового ряда (если в ряду нет значения ≤ date — из плана).
+ * yieldFromData — из годового ряда за ГОД ДАТЫ (yieldAt); если за этот год данных нет (2025, 2026 —
+ * итогов ещё нет), без исключения берётся плановая урожайность. Узнать, что взят план, — yieldAt(data.yield, date) === null.
  * Расход топлива л/га и затраты без топлива — из плана.
  * Нет цены или дизеля на дату → Error (не подставляем выдуманных значений).
  * База «за месяц» — periodStateAt(plan, data, monthAgo(date)) (monthAgo из ./series: тот же день месяцем раньше).
@@ -178,7 +179,7 @@ export const periodStateAt: PeriodStateAt = (plan, data, date, opts = {}) => {
   if (!diesel) throw new Error(`Нет цены дизтоплива на дату ${date} и ранее`);
   let yieldCha = plan.yieldCha.value;
   if (opts.yieldFromData) {
-    const y = numberAt(data.yield, date);
+    const y = yieldAt(data.yield, date);
     if (y) yieldCha = y.value;
   }
   return {

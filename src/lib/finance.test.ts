@@ -12,7 +12,7 @@ import {
   periodStateAt,
   sensitivity,
 } from './finance';
-import { alignedSeasonDate, changePct, monthAgo, valueAt } from './series';
+import { alignedSeasonDate, changePct, monthAgo, valueAt, yieldAt } from './series';
 
 const A = (value: number) => ({ value, assumption: false });
 
@@ -218,7 +218,12 @@ describe('periodStateAt', () => {
     expect(periodStateAt(plan, data, '2026-09-30').dieselPerL).toBe(70);
   });
   it('yieldFromData — урожайность из ряда', () => {
-    expect(periodStateAt(plan, data, '2026-10-28', { yieldFromData: true }).yieldCha).toBe(41);
+    // за 2026 итогов нет (последняя точка 2025) — без исключения берётся план, а не прошлый год
+    expect(periodStateAt(plan, data, '2026-10-28', { yieldFromData: true }).yieldCha).toBe(50);
+    expect(yieldAt(data.yield, '2026-10-28')).toBeNull();
+    const with2026 = { ...data, yield: ser([['2025-01-01', 41], ['2026-01-01', 44]], { indicator: 'yield', frequency: 'year' }) };
+    expect(periodStateAt(plan, with2026, '2026-10-28', { yieldFromData: true }).yieldCha).toBe(44);
+    expect(periodStateAt(plan, with2026, '2026-10-28').yieldCha).toBe(50); // без флага — план
     const noYield = { ...data, yield: { ...data.yield, series: [] } };
     expect(periodStateAt(plan, noYield, '2026-10-28', { yieldFromData: true }).yieldCha).toBe(50); // нет в ряду → план
   });
@@ -392,5 +397,26 @@ describe('alignedSeasonDate', () => {
     expect(alignedSeasonDate(s, [2026, 2027])).toBeNull(); // март и апрель — разные месяцы
     expect(alignedSeasonDate(ser([]), [2025, 2026])).toBeNull();
     expect(alignedSeasonDate(s, [2025, 2026], '13-01')).toBeNull();
+  });
+});
+
+describe('yieldAt', () => {
+  const y = ser(
+    [
+      ['2022-01-01', 67.45],
+      ['2023-01-01', null],
+      ['2024-01-01', 63.09],
+    ],
+    { indicator: 'yield', frequency: 'year' },
+  );
+  it('значение за год даты', () => {
+    expect(yieldAt(y, '2024-09-01')).toEqual({ value: 63.09, year: 2024 });
+    expect(yieldAt(y, '2022-12-31')).toEqual({ value: 67.45, year: 2022 });
+  });
+  it('нет итогов за год или пропуск — null, прошлые годы не берутся', () => {
+    expect(yieldAt(y, '2025-10-01')).toBeNull();
+    expect(yieldAt(y, '2026-10-26')).toBeNull();
+    expect(yieldAt(y, '2023-06-01')).toBeNull();
+    expect(yieldAt(y, 'плохая дата')).toBeNull();
   });
 });

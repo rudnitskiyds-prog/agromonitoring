@@ -23,13 +23,16 @@ const CROP_IDS: CropId[] = ['wheat', 'barley', 'sunflower', 'corn'];
 const a = (value: number): Assumable => ({ value, assumption: true });
 
 /**
- * Условное допущение: плановая урожайность, ц/га (в конфиге регионов её нет).
- * Порядок величин — типичный для зоны; НЕ статистика, пользователь правит в онбординге.
+ * Плановая урожайность по умолчанию, ц/га — среднее Росстата/ЕМИСС за 2022–2024, допущение для плана
+ * (public/data/yield_{region}_{crop}_year.json; итогов 2025–2026 в рядах нет).
+ * Регион без записи — среднее по России за те же годы. Пользователь правит в онбординге.
  */
 export const FALLBACK_YIELD_CHA: Record<string, Record<CropId, number>> = {
-  krasnodar: { wheat: 55, barley: 50, sunflower: 26, corn: 60 },
-  saratov: { wheat: 25, barley: 20, sunflower: 15, corn: 35 },
-  default: { wheat: 35, barley: 30, sunflower: 20, corn: 45 },
+  // Кубань: пшеница (67,45 + 56,19 + 63,09) / 3; ячмень; подсолнечник; кукуруза
+  krasnodar: { wheat: 62.2, barley: 63.5, sunflower: 24.2, corn: 51.9 },
+  saratov: { wheat: 28.7, barley: 17.8, sunflower: 14.9, corn: 53.4 },
+  // Россия в среднем — для регионов без своей записи
+  default: { wheat: 32.2, barley: 27.0, sunflower: 17.9, corn: 60.4 },
 };
 
 function cloneCosts(c: CostsPerHa): CostsPerHa {
