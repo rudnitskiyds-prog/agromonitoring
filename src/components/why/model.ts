@@ -2,7 +2,8 @@
 // Формулы — только из src/lib/finance.ts; здесь лишь выбор дат и рядов.
 import { CROPS, REGIONS } from '../../config/regions';
 import { factorAnalysis, periodStateAt } from '../../lib/finance';
-import { numberAt, validPoints } from '../../lib/series';
+import { alignedSeasonDate, numberAt, validPoints } from '../../lib/series';
+import { formatDate } from '../../lib/format';
 import { buildDefaultPlan } from '../../store/farm';
 import type { CropId, CropPlan, DataSeries, FactorAnalysis, FactorId, FarmProfile, GeoScope, MarketData, RegionId } from '../../types';
 
@@ -63,13 +64,10 @@ export function availableYears(data: MarketData): number[] {
   const years = validPoints(data.yield.series).map((p) => Number(p.date.slice(0, 4)));
   return years.filter((y) => {
     const d = seasonDate(y);
-    const yieldPoint = numberAt(data.yield, d);
-    return (
-      numberAt(data.price, d) !== null &&
-      numberAt(data.diesel, d) !== null &&
-      yieldPoint !== null &&
-      yieldPoint.date.startsWith(String(y))
-    );
+    // Каждая точка — из своего сезона: цену или солярку прошлого года за этот сезон не выдаём.
+    // Цена — любой месяц этого года не позже даты сезона (пару выравнивает alignedSeasonDate).
+    const sameYear = (p: { date: string } | null) => p !== null && p.date.startsWith(String(y));
+    return sameYear(numberAt(data.price, d)) && sameYear(numberAt(data.diesel, d)) && sameYear(numberAt(data.yield, d));
   });
 }
 
@@ -79,18 +77,19 @@ export interface WhyModel {
   years: number[];
   from: number;
   to: number;
+  /** Даты сравнения: один и тот же месяц цены в обоих сезонах (alignedSeasonDate) */
+  dates: { from: string; to: string };
   analysis: FactorAnalysis;
 }
 
 export type WhyModelResult =
   | { ok: true; model: WhyModel }
-  | { ok: false; reason: 'noYears' | 'same'; years: number[]; plan: CropPlan; fromProfile: boolean };
+  | { ok: false; reason: 'noYears' | 'same' | 'noAligned'; years: number[]; plan: CropPlan; fromProfile: boolean };
 
 export function buildModel(
   sel: WhySelection,
   profile: FarmProfile,
   data: MarketData,
-  seasonLabel: (year: string) => string,
 ): WhyModelResult {
   const { plan, fromProfile } = planFor(profile, sel.region, sel.crop);
   const years = availableYears(data);
@@ -100,10 +99,17 @@ export function buildModel(
   const prev = years.filter((y) => y < to).pop() ?? years[0];
   const from = sel.from !== null && years.includes(sel.from) ? sel.from : prev;
   if (from === to) return { ok: false, reason: 'same', years, plan, fromProfile };
-  const base = periodStateAt(plan, data, seasonDate(from), { yieldFromData: true, label: seasonLabel(String(from)) });
-  const current = periodStateAt(plan, data, seasonDate(to), { yieldFromData: true, label: seasonLabel(String(to)) });
+  // Один и тот же месяц цены в обоих сезонах; солярка и урожайность — последнее значение на эту дату
+  const dates = alignedSeasonDate(data.price, [from, to], SEASON_DATE_MMDD);
+  if (!dates) return { ok: false, reason: 'noAligned', years, plan, fromProfile };
+  const label = (iso: string) => {
+    const m = formatDate(iso, 'month');
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  };
+  const base = periodStateAt(plan, data, dates.from, { yieldFromData: true, label: label(dates.from) });
+  const current = periodStateAt(plan, data, dates.to, { yieldFromData: true, label: label(dates.to) });
   const analysis = factorAnalysis(base, current, plan.areaHa, plan.crop);
-  return { ok: true, model: { plan, fromProfile, years, from, to, analysis } };
+  return { ok: true, model: { plan, fromProfile, years, from, to, dates, analysis } };
 }
 
 /** С кем сравнивать показатель на шаге «Регион»: для урожайности — регионы и Россия, для цен — только регионы. */
@@ -113,3 +119,8 @@ export function compareScopes(region: RegionId, factor: FactorId): GeoScope[] {
 }
 
 export const seriesYear = (s: DataSeries, year: number) => numberAt(s, seasonDate(year));
+
+/** Фактические даты точек цены и солярки, взятых на дату сезона (цена может быть за прошлый месяц). */
+export function pointDates(data: MarketData, d: string): { price: string | null; diesel: string | null } {
+  return { price: numberAt(data.price, d)?.date ?? null, diesel: numberAt(data.diesel, d)?.date ?? null };
+}

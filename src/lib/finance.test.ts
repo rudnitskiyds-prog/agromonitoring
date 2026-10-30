@@ -12,7 +12,7 @@ import {
   periodStateAt,
   sensitivity,
 } from './finance';
-import { changePct, monthAgo, valueAt } from './series';
+import { alignedSeasonDate, changePct, monthAgo, valueAt } from './series';
 
 const A = (value: number) => ({ value, assumption: false });
 
@@ -361,5 +361,36 @@ describe('ряды Росстата с пропусками и задержко�
     expect(fa.contributions[0].changePct).toBe(0);
     expect(fa.contributions[2].effectPerHa).toBeCloseTo(-2.8 * 60, 9);
     expect(Math.abs(fa.residualPerHa)).toBeLessThan(1e-6);
+  });
+});
+
+describe('alignedSeasonDate', () => {
+  const months = (y: number, last: number, nulls: string[] = []) =>
+    Array.from({ length: last }, (_, i) => {
+      const date = `${y}-${String(i + 1).padStart(2, '0')}-01`;
+      return [date, nulls.includes(date) ? null : 1000 + i] as [string, number | null];
+    });
+  it('текущего октября нет — оба сезона на сентябрь', () => {
+    const s = ser([...months(2025, 12), ...months(2026, 9)]);
+    expect(alignedSeasonDate(s, [2025, 2026])).toEqual({ from: '2025-09-01', to: '2026-09-01' });
+  });
+  it('оба октября есть — октябрь', () => {
+    const s = ser([...months(2024, 12), ...months(2025, 12)]);
+    expect(alignedSeasonDate(s, [2024, 2025])).toEqual({ from: '2024-10-01', to: '2025-10-01' });
+  });
+  it('пропуски: месяц с null в одном из лет пропускается', () => {
+    const s = ser([...months(2025, 12, ['2025-08-01']), ...months(2026, 9, ['2026-09-01'])]);
+    expect(alignedSeasonDate(s, [2025, 2026])).toEqual({ from: '2025-07-01', to: '2026-07-01' });
+  });
+  it('свой preferred и день внутри месяца', () => {
+    const s = ser([...months(2025, 12), ...months(2026, 12)]);
+    expect(alignedSeasonDate(s, [2025, 2026], '06-15')).toEqual({ from: '2025-06-01', to: '2026-06-01' });
+  });
+  it('смена года: в прошлый год не переходит, общего месяца нет — null', () => {
+    const s = ser([['2025-12-01', 1], ['2026-03-01', 2], ['2027-04-01', 3]]);
+    expect(alignedSeasonDate(s, [2026, 2027], '02-01')).toBeNull();
+    expect(alignedSeasonDate(s, [2026, 2027])).toBeNull(); // март и апрель — разные месяцы
+    expect(alignedSeasonDate(ser([]), [2025, 2026])).toBeNull();
+    expect(alignedSeasonDate(s, [2025, 2026], '13-01')).toBeNull();
   });
 });

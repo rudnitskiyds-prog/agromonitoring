@@ -5,7 +5,8 @@ import { useSeriesList } from '../../hooks/useData';
 import { sourceOf } from '../../lib/data';
 import { CHANGE_NOISE_PCT } from '../../lib/signals';
 import { computeFarmEconomics, factorAnalysis, periodStateAt } from '../../lib/finance';
-import { monthAgo, numberAt } from '../../lib/series';
+import { MONTHS_NOM } from '../../lib/format';
+import { monthAgo, numberAt, shiftMonths } from '../../lib/series';
 import type {
   CropId,
   CropPlan,
@@ -26,6 +27,8 @@ export type Period = 'month' | 'year';
 export interface CropMarket {
   plan: CropPlan;
   data: MarketData;
+  /** Цена по России — форма сезонного профиля (buildRegionalProfile) */
+  russiaPrice: DataSeries;
 }
 
 export interface FarmMarket {
@@ -45,6 +48,7 @@ function keysFor(profile: FarmProfile): SeriesKey[] {
     ...profile.crops.flatMap((c): SeriesKey[] => [
       { indicator: 'producer_price', region, crop: c.crop, frequency: 'month' },
       { indicator: 'yield', region, crop: c.crop, frequency: 'year' },
+      { indicator: 'producer_price', region: 'russia', crop: c.crop, frequency: 'month' },
     ]),
   ];
 }
@@ -65,7 +69,8 @@ export function useFarmMarket(profile: FarmProfile) {
     if (!last) return null;
     const crops: CropMarket[] = profile.crops.map((plan, i) => ({
       plan,
-      data: { price: rest[i * 2], yield: rest[i * 2 + 1], diesel },
+      data: { price: rest[i * 3], yield: rest[i * 3 + 1], diesel },
+      russiaPrice: rest[i * 3 + 2],
     }));
     const prices: FarmMarket['prices'] = {};
     for (const c of crops) {
@@ -78,7 +83,8 @@ export function useFarmMarket(profile: FarmProfile) {
     }
     const main = mainCrop(profile);
     const mainData = crops.find((c) => c.plan.crop === main)?.data ?? crops[0]?.data;
-    const all = [diesel, ...rest].map(sourceOf);
+    // Источники цифр расчёта: дизель, цена и урожайность региона (ряды по России — только для формы сезонности)
+    const all = [diesel, ...crops.flatMap((c) => [c.data.price, c.data.yield])].map(sourceOf);
     return {
       crops,
       diesel,
@@ -104,6 +110,11 @@ export interface TodayModel {
   totalChange: number;
   /** Сумма вкладов фактора по всем культурам, ₽ */
   factorTotals: Record<FactorId, number>;
+  /**
+   * Культуры, у которых база и сегодня попали на одну и ту же точку цены (Росстат ещё не опубликовал
+   * следующий месяц). Значение — этот неопубликованный месяц, именительный падеж строчными: «октябрь».
+   */
+  priceNotPublished: Partial<Record<CropId, string>>;
   totalAreaHa: number;
   econ: FarmEconomics;
 }
@@ -123,6 +134,15 @@ export function buildTodayModel(profile: FarmProfile, market: FarmMarket, period
       /* нет данных на одну из дат — культура пропускается, страница это покажет */
     }
   }
+  const priceNotPublished: TodayModel['priceNotPublished'] = {};
+  for (const { plan, data } of market.crops) {
+    const basePt = numberAt(data.price, baseDate);
+    const curPt = numberAt(data.price, date);
+    if (basePt && curPt && basePt.date === curPt.date) {
+      const next = shiftMonths(curPt.date, 1);
+      priceNotPublished[plan.crop] = MONTHS_NOM[Number(next.slice(5, 7)) - 1];
+    }
+  }
   const factorTotals: Record<FactorId, number> = { price: 0, yield: 0, diesel: 0, otherCosts: 0 };
   for (const a of analyses) for (const c of a.contributions) factorTotals[c.factor] += c.effectTotal;
   return {
@@ -132,6 +152,7 @@ export function buildTodayModel(profile: FarmProfile, market: FarmMarket, period
     analyses,
     totalChange: analyses.reduce((s, a) => s + a.totalChange, 0),
     factorTotals,
+    priceNotPublished,
     totalAreaHa: profile.crops.reduce((s, c) => s + c.areaHa, 0),
     econ: computeFarmEconomics(profile, market.prices),
   };

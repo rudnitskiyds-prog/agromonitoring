@@ -18,6 +18,13 @@ const headOf = (t: string) => {
   return i < 0 ? '' : t.slice(0, i + 1);
 };
 const lastOf = (t: string) => t.slice(t.lastIndexOf(' ') + 1);
+/** Длинные официальные названия наборов («Росстат: Средние цены производителей …») сокращаем по слову; полное — в подсказке */
+const MAX_SOURCE = 56;
+function shortSource(t: string): string {
+  if (t.length <= MAX_SOURCE) return t;
+  const cut = t.slice(0, MAX_SOURCE);
+  return `${cut.slice(0, cut.lastIndexOf(' ')).replace(/[,:;]$/, '')}…`;
+}
 
 export interface SourceNoteProps {
   /** Один источник или несколько (график с двумя рядами из разных источников) */
@@ -40,27 +47,28 @@ export default function SourceNote({ source, note, hideDemoBadge = false, classN
       <span className="min-w-0">
         <span className="font-medium text-ink/70">{list.length > 1 ? L_SOURCES : L_SOURCE}:</span>{' '}
         {list.map((s, i) => (
-          <span key={`${s.source}-${i}`}>
+          <span key={`${s.source}-${i}`} title={s.source_url ? undefined : s.source}>
             {i > 0 && <span aria-hidden> · </span>}
             {s.source_url ? (
               <a
                 href={s.source_url}
+                title={s.source}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="underline decoration-line-strong underline-offset-2 hover:text-accent hover:decoration-accent"
               >
-                {headOf(s.source)}
+                {headOf(shortSource(s.source))}
                 {/* последнее слово, значок и запятая не разрываются переносом */}
                 <span className="whitespace-nowrap">
-                  {lastOf(s.source)}
+                  {lastOf(shortSource(s.source))}
                   <ExternalLink size={11} className="ml-0.5 inline align-baseline" aria-hidden />
                   <span className="inline-block">,</span>
                 </span>
               </a>
             ) : (
               <>
-                {headOf(s.source)}
-                <span className="whitespace-nowrap">{lastOf(s.source)},</span>
+                {headOf(shortSource(s.source))}
+                <span className="whitespace-nowrap">{lastOf(shortSource(s.source))},</span>
               </>
             )}
             <span className="num"> {asOf(formatDate(s.updated_at, 'long'))}</span>

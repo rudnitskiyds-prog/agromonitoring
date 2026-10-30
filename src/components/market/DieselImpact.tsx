@@ -6,6 +6,7 @@ import { Skeleton } from '../States';
 import { CROPS } from '../../config/regions';
 import { texts } from '../../content/texts';
 import { formatNumber, formatPct, formatRub } from '../../lib/format';
+import { CHANGE_NOISE_PCT } from '../../lib/signals';
 import type { CropId, SignalStatus, SourceRef } from '../../types';
 import { AssumptionBadge } from '../Badges';
 import SourceNote from '../SourceNote';
@@ -57,12 +58,15 @@ export default function DieselImpact({ rows, total, changePct, changeText, price
       <span aria-hidden className="absolute inset-y-0 left-8 w-px bg-status-worse/25" />
       <div className="relative flex flex-1 flex-col py-card pl-12 pr-card">
         <h3 id="diesel-impact-title" className="text-lg leading-snug">
-          {L.title}
+          {changePct == null || Math.abs(changePct) < CHANGE_NOISE_PCT ? L.title : changePct > 0 ? L.titleUp : L.titleDown}
         </h3>
 
         <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="num whitespace-nowrap text-sm text-muted">
-            {L.priceNow}: <b className="font-semibold text-ink">{formatNumber(priceNow, 2)} {U.rubPerL}</b>
+            {L.priceNow}: <b className="font-semibold text-ink">{formatNumber(priceNow, 2)} {U.rubPerL}</b>{' '}
+            <span title={texts.common.labels.dieselRussiaHint} className="cursor-help underline decoration-dotted underline-offset-2">
+              {texts.common.labels.dieselRussia}
+            </span>
           </span>
           <span className="num inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-ink">
             <Arrow size={15} aria-hidden />

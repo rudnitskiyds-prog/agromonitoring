@@ -11,7 +11,7 @@ import SeasonStrip, { PHASE_LABEL, seasonNow } from '../components/SeasonStrip';
 import SourceNote from '../components/SourceNote';
 import StatusTag from '../components/StatusTag';
 import DieselImpact, { type DieselImpactRow } from '../components/market/DieselImpact';
-import { ErrorState, LoadingState, Skeleton } from '../components/States';
+import { EmptyState, ErrorState, LoadingState, Skeleton } from '../components/States';
 import PagePicker from '../components/market/PagePicker';
 import SeasonalProfileChart from '../components/market/SeasonalProfileChart';
 import { phaseMonths } from '../components/market/phaseMonths';
@@ -24,16 +24,23 @@ import { sourceOf } from '../lib/data';
 import { computeCropEconomics, factorAnalysis, periodStateAt } from '../lib/finance';
 import { MONTHS_PREP, formatDate, formatNumber, formatPct, formatRub } from '../lib/format';
 import { cropShortName } from '../lib/signals';
-import { buildSeasonalProfile, seasonalDeviation } from '../lib/seasonality';
+import { buildRegionalProfile, seasonalDeviation, type RegionalSeasonalProfile } from '../lib/seasonality';
 import { changePct, monthAgo, numberAt, validPoints } from '../lib/series';
 import { marketLink, whatIfLink } from '../routes';
-import type { CropId, DataSeries, FarmProfile, RegionId, SeasonPhaseId, SeriesKey, SignalStatus } from '../types';
+import type { CropId, DataSeries, FarmProfile, RegionId, SeasonPhaseId, SeriesKey, SignalStatus, SourceRef } from '../types';
 
 const M = texts.market;
 const C = texts.common;
 
 const VERDICT_LABEL: Record<SignalStatus, string> = M.verdict.labels;
 const L_SEASON_TITLE = texts.home.seasonStrip.title;
+
+/** «Цена по месяцам: январь 2025 – сентябрь 2026» — период графика по факту. */
+function priceLead(s: DataSeries): string {
+  const pts = s.series.slice(-24);
+  if (!pts.length) return '';
+  return M.priceChart.period(formatDate(pts[0].date, 'month'), formatDate(pts[pts.length - 1].date, 'month'));
+}
 
 function todayIso(): string {
   const d = new Date();
@@ -80,7 +87,7 @@ export default function MarketPage() {
         onRetry={bump('prices')}
       />
       <DieselArea
-        key={`diesel-${region}-${retry.prices}`}
+        key={`diesel-${retry.prices}`}
         region={region}
         profile={profile}
         focus={focus}
@@ -105,7 +112,11 @@ function PriceArea({
   cropName: string;
   onRetry: () => void;
 }) {
-  const st = useSeries({ indicator: 'producer_price', region, crop, frequency: 'month' });
+  // Региональные ряды Росстата короткие (с 2025 г.): форма сезонности — по России, уровень — по региону
+  const st = useSeriesList([
+    { indicator: 'producer_price', region, crop, frequency: 'month' },
+    { indicator: 'producer_price', region: 'russia', crop, frequency: 'month' },
+  ]);
   const [activePhase, setActivePhase] = useState<SeasonPhaseId | undefined>(undefined);
   const regionCfg = REGIONS[region];
   const phases = regionCfg.season[crop];
@@ -165,7 +176,9 @@ function PriceArea({
 
   return (
     <MarketBody
-      price={st.data}
+      price={st.data[0]}
+      russia={st.data[1]}
+      regionName={regionCfg.name}
       crop={crop}
       cropName={cropName}
       strip={strip}
@@ -178,6 +191,8 @@ function PriceArea({
 
 interface BodyProps {
   price: DataSeries;
+  russia: DataSeries;
+  regionName: string;
   crop: CropId;
   cropName: string;
   strip: ReactNode;
@@ -186,21 +201,34 @@ interface BodyProps {
   onRetry: () => void;
 }
 
-function MarketBody({ price, crop, cropName, strip, activePhase, phaseMonthsList, onRetry }: BodyProps) {
+function MarketBody({ price, russia, regionName, crop, cropName, strip, activePhase, phaseMonthsList, onRetry }: BodyProps) {
   const cropCfg = CROPS[crop];
   const highlightMonths = phaseMonthsList;
-  const profileModel = useMemo(() => buildSeasonalProfile(price), [price]);
+  const profileModel: RegionalSeasonalProfile = useMemo(() => buildRegionalProfile(russia, price), [russia, price]);
+  const hasNorm = profileModel.levelMonths > 0;
   const dev = useMemo(() => {
+    if (!hasNorm) return null;
     try {
       return seasonalDeviation(price, profileModel);
     } catch {
       return null;
     }
-  }, [price, profileModel]);
+  }, [price, profileModel, hasNorm]);
+  // Последний месяц ряда (может быть пропуском null) — чтобы честно подписать дату цены
+  const lastSeriesDate = price.series[price.series.length - 1]?.date ?? '';
+  const priceSources = [sourceOf(price), profileModel.shape.source];
+  const yrs = profileModel.shape.years;
+  const basisNote = [
+    yrs.length ? M.seasonChart.basis(`${yrs[0]}–${yrs[yrs.length - 1]}`, regionName) : null,
+    profileModel.levelMonths > 0 && profileModel.levelMonths < 12 ? M.seasonChart.levelMonths(String(profileModel.levelMonths)) : null,
+  ]
+    .filter(Boolean)
+    .join('; ');
 
   // Цена за 24 месяца и норма месяца на тех же датах (одна ось, пунктир)
   const priceSeries: ChartSeries[] = useMemo(() => {
-    const pts = validPoints(price.series).slice(-24);
+    // Последние 24 месяца ряда вместе с пропусками: разрыв линии честнее, чем соединение через пропуск
+    const pts = price.series.slice(-24);
     return [
       { id: 'price', label: cropShortName(crop), colorVar: cropCfg.colorVar, points: pts },
       {
@@ -208,14 +236,13 @@ function MarketBody({ price, crop, cropName, strip, activePhase, phaseMonthsList
         label: M.seasonChart.normShort,
         colorVar: cropCfg.colorVar,
         dashed: true,
-        points: pts.map((p) => ({ date: p.date, value: profileModel.months[Number(p.date.slice(5, 7)) - 1]?.normPrice ?? null })),
+        points: hasNorm ? pts.map((p) => ({ date: p.date, value: profileModel.months[Number(p.date.slice(5, 7)) - 1]?.normPrice ?? null })) : [],
       },
     ];
-  }, [price, profileModel, crop, cropCfg.colorVar]);
+  }, [price, profileModel, crop, cropCfg.colorVar, hasNorm]);
 
   const best = [...profileModel.months].sort((a, b) => b.index - a.index)[0];
   const worst = [...profileModel.months].sort((a, b) => a.index - b.index)[0];
-  const years = profileModel.years;
 
   return (
     <>
@@ -233,7 +260,11 @@ function MarketBody({ price, crop, cropName, strip, activePhase, phaseMonthsList
             min={profileModel.months[dev.month - 1]?.min}
             max={profileModel.months[dev.month - 1]?.max}
             source={price}
+            sources={priceSources}
+            stale={dev.date.slice(0, 7) < lastSeriesDate.slice(0, 7)}
           />
+        ) : !hasNorm ? (
+          <EmptyState message={C.empty.noRegionData} />
         ) : (
           <ErrorState message={C.errors.loadSeries(M.verdict.title)} onRetry={onRetry} />
         )}
@@ -247,7 +278,7 @@ function MarketBody({ price, crop, cropName, strip, activePhase, phaseMonthsList
           id="price"
           as="h2"
           question={M.priceChart.title}
-          lead={M.priceChart.lead}
+          lead={priceLead(price)}
           unit={M.priceChart.yAxis}
           source={sourceOf(price)}
         >
@@ -269,8 +300,8 @@ function MarketBody({ price, crop, cropName, strip, activePhase, phaseMonthsList
             </>
           }
           unit={M.priceChart.yAxis}
-          source={profileModel.source}
-          sourceNote={years.length ? M.seasonChart.yearsCaption(String(years[0]), String(years[years.length - 1])) : undefined}
+          source={priceSources.slice().reverse()}
+          sourceNote={basisNote || undefined}
         >
           <SeasonalProfileChart
             profile={profileModel}
@@ -318,8 +349,11 @@ function Verdict(props: {
   min?: number;
   max?: number;
   source: DataSeries;
+  sources: SourceRef[];
+  /** Последний месяц ряда пуст — цена взята за более ранний месяц */
+  stale: boolean;
 }) {
-  const { crop, cropGenitive, deviationPct, status, date, currentPrice, normPrice, min, max, source } = props;
+  const { crop, cropGenitive, deviationPct, status, date, currentPrice, normPrice, min, max, source, sources, stale } = props;
   const month = formatDate(date, 'monthGenitive');
   const pctAbs = formatPct(Math.abs(deviationPct), { sign: false, fractionDigits: 0 });
   const sentence =
@@ -337,6 +371,7 @@ function Verdict(props: {
         ? { to: whatIfLink({ crop, pricePct }), label: M.verdict.whatIfBelow }
         : { to: whatIfLink({ crop }), label: M.verdict.toWhatIf };
   const monthName = formatDate(date, 'month');
+  const priceLabel = stale ? M.verdict.priceFor(formatDate(date, 'month')) : M.verdict.priceNow(monthName);
 
   return (
     <section
@@ -366,7 +401,7 @@ function Verdict(props: {
 
         <dl className="num mt-block grid grid-cols-1 gap-x-6 gap-y-3 border-t border-line pt-4 sm:grid-cols-3">
           <div className="min-w-0">
-            <dt className="text-xs text-muted">{M.verdict.priceNow(monthName)}</dt>
+            <dt className="text-xs text-muted">{priceLabel}</dt>
             <dd className="mt-1 whitespace-nowrap text-[17px] font-semibold">{formatRub(currentPrice, { unit: '₽/т' })}</dd>
           </div>
           <div className="min-w-0">
@@ -391,7 +426,7 @@ function Verdict(props: {
         >
           {whatIf.label}
         </Button>
-        <SourceNote source={sourceOf(source)} hideDemoBadge className="mt-4" />
+        <SourceNote source={sources} hideDemoBadge className="mt-4" />
       </div>
     </section>
   );
@@ -490,7 +525,7 @@ function DieselSection({
 
   // Рублёвый эффект — цепные подстановки finance.ts: меняется только цена дизеля за месяц
   const impact = useMemo(() => {
-    if (!farmData || region !== profile.region) return null;
+    if (!farmData) return null;
     const n = profile.crops.length;
     const fDiesel = farmData[0];
     const fLast = numberAt(fDiesel);
@@ -564,7 +599,7 @@ function DieselSection({
         changePct={ch}
         changeText={changeShort}
         priceNow={last?.value ?? 0}
-        otherRegion={region !== profile.region}
+        otherRegion={false}
         farmStatus={farmStatus}
         onRetry={onRetry}
         sources={[sourceOf(diesel), ...(farmData ? farmData.slice(1, 1 + profile.crops.length).map(sourceOf) : [])]}

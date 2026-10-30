@@ -12,6 +12,7 @@ import { loadSeries, sourceOf } from '../lib/data';
 import { computeFarmEconomics, factorAnalysis, periodStateAt } from '../lib/finance';
 import { formatDate, formatNumber, formatRub } from '../lib/format';
 import { monthAgo, numberAt } from '../lib/series';
+import { CHANGE_NOISE_PCT } from '../lib/signals';
 import { ROUTES } from '../routes';
 import { DEMO_FARM } from '../store/farm';
 import type { CropId, MarketPrices, SourceRef } from '../types';
@@ -24,6 +25,8 @@ const PERIOD_MONTH = L.periodMonth;
 interface LiveCalc {
   /** Эффект изменения цены солярки за месяц на всё хозяйство, ₽ (знак: + улучшило) */
   dieselEffect: number;
+  /** Изменение цены солярки за месяц, %; null — база 0 */
+  dieselChangePct: number | null;
   wheatPrice: number | null;
   dieselPrice: number;
   seasonProfit: number;
@@ -52,18 +55,22 @@ async function computeLive(): Promise<LiveCalc> {
   const before = monthAgo(date);
 
   let dieselEffect = 0;
+  let dieselChangePct: number | null = null;
   const prices: Partial<Record<CropId, MarketPrices>> = {};
   for (const { plan, data } of perCrop) {
     const base = periodStateAt(plan, data, before);
     const cur = periodStateAt(plan, data, date);
     const fa = factorAnalysis(base, cur, plan.areaHa, plan.crop);
-    dieselEffect += fa.contributions.find((c) => c.factor === 'diesel')?.effectTotal ?? 0;
+    const d = fa.contributions.find((c) => c.factor === 'diesel');
+    dieselEffect += d?.effectTotal ?? 0;
+    dieselChangePct = d?.changePct ?? dieselChangePct;
     prices[plan.crop] = { pricePerT: cur.pricePerT, dieselPerL: cur.dieselPerL };
   }
   const econ = computeFarmEconomics(DEMO_FARM, prices);
   const wheat = perCrop.find((c) => c.plan.crop === 'wheat');
   return {
     dieselEffect,
+    dieselChangePct,
     wheatPrice: wheat ? (numberAt(wheat.data.price, date)?.value ?? null) : null,
     dieselPrice: last.value,
     seasonProfit: econ.profit,
@@ -113,7 +120,8 @@ function LiveCardInner({ onRetry }: { onRetry: () => void }) {
             {L.kicker}
             {state.status === 'ok' && <span className="num"> · {formatDate(state.calc.date, 'long')}</span>}
           </p>
-          <DemoBadge size="sm" />
+          {/* «Демо-данные» — только если среди рядов расчёта есть демо (цены и солярка теперь реальные) */}
+          {state.status === 'ok' && state.calc.sources.some((x) => x.demo) && <DemoBadge size="sm" />}
         </div>
 
         {state.status === 'loading' && (
@@ -154,13 +162,17 @@ function LiveCardBody({ calc, areaStr, regionShort }: { calc: LiveCalc; areaStr:
   const rounded = Math.round(calc.dieselEffect / 1000) * 1000;
   const loss = rounded <= 0;
   const rub = formatRub(Math.abs(rounded));
-  const sentence = loss
-    ? L.headline(areaStr, regionShort, rub, PERIOD_MONTH)
-    : L.headlineGain(areaStr, regionShort, rub, PERIOD_MONTH);
+  // Изменение солярки в пределах шума — «почти не изменилась», без «обошёлся» / «в плюс»
+  const flat = calc.dieselChangePct === null || Math.abs(calc.dieselChangePct) < CHANGE_NOISE_PCT;
+  const sentence = flat
+    ? L.headlineFlat(areaStr, regionShort, PERIOD_MONTH)
+    : loss
+      ? L.headline(areaStr, regionShort, rub, PERIOD_MONTH)
+      : L.headlineGain(areaStr, regionShort, rub, PERIOD_MONTH);
 
   const figures: Array<{ label: string; value: string; badge?: 'assumption' }> = [
     ...(calc.wheatPrice != null ? [{ label: L.figures.wheatPrice, value: formatRub(calc.wheatPrice, { unit: '₽/т' }) }] : []),
-    { label: L.figures.dieselPrice, value: `${formatNumber(calc.dieselPrice, 2)} ${texts.common.units.rubPerL}` },
+    { label: `${L.figures.dieselPrice} ${texts.common.labels.dieselRussia}`, value: `${formatNumber(calc.dieselPrice, 2)} ${texts.common.units.rubPerL}` },
     { label: L.figures.seasonProfitShort, value: formatRub(calc.seasonProfit, { compact: true }), badge: 'assumption' },
   ];
 

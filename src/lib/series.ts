@@ -58,3 +58,33 @@ export function daysInMonth(year: number, month: number): number {
   const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
   return [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
 }
+
+/**
+ * Даты двух сезонов на один и тот же месяц — чтобы сравнивать одинаковые месяцы (С3).
+ * Ищет самый поздний месяц не позже `preferred` ('MM-DD', по умолчанию '10-01'), в котором у ряда
+ * есть непустое значение в ОБОИХ годах years = [базовый, текущий]. Поиск идёт назад только внутри
+ * календарного года (до января), в прошлый год не переходит.
+ * Возвращает даты этих точек: from — базовый год, to — текущий (для месячного ряда — 'YYYY-MM-01').
+ * null — общего месяца нет: сравнить сезоны по цене на одну дату нельзя.
+ */
+export function alignedSeasonDate(
+  series: DataSeries,
+  years: [number, number],
+  preferred = '10-01',
+): { from: string; to: string } | null {
+  const pts = validPoints(series.series);
+  // Первая непустая точка месяца в году не позже preferred: 'YYYY-MM' → дата.
+  const firstIn = (y: number, mm: string): string | null => {
+    const p = pts.find((x) => x.date.startsWith(`${y}-${mm}`) && x.date.slice(5, 10) <= preferred);
+    return p ? p.date : null;
+  };
+  const startM = Number(preferred.slice(0, 2));
+  if (!(startM >= 1 && startM <= 12)) return null;
+  for (let m = startM; m >= 1; m--) {
+    const mm = String(m).padStart(2, '0');
+    const from = firstIn(years[0], mm);
+    const to = firstIn(years[1], mm);
+    if (from && to) return { from, to };
+  }
+  return null;
+}

@@ -19,7 +19,7 @@ import { useForecast } from '../hooks/useData';
 import { sourceOf } from '../lib/data';
 import { breakevenCushion, chaToT } from '../lib/finance';
 import { formatDate, formatNumber, formatPct, formatRub } from '../lib/format';
-import { buildSeasonalProfile, seasonalDeviation } from '../lib/seasonality';
+import { buildRegionalProfile, seasonalDeviation } from '../lib/seasonality';
 import { buildSignals, detectWeatherRisks, pickAdvice } from '../lib/signals';
 import { harvestLink, marketLink, readParams, ROUTES, todayLink } from '../routes';
 import type { CropId, FactorAnalysis, FactorId, SeasonalDeviation, SignalContext, WeatherRisk } from '../types';
@@ -61,7 +61,8 @@ function TodayInner({ onRetry }: { onRetry: () => void }) {
     const out: SeasonalDeviation[] = [];
     for (const c of market.crops) {
       try {
-        out.push(seasonalDeviation(c.data.price, buildSeasonalProfile(c.data.price), { date: market.date }));
+        // Форма сезонности — по России (5 лет), уровень — по региональному ряду (короче)
+        out.push(seasonalDeviation(c.data.price, buildRegionalProfile(c.russiaPrice, c.data.price), { date: market.date }));
       } catch {
         /* мало лет в ряду — без сезонного сигнала */
       }
@@ -180,7 +181,7 @@ const CAUSE_NAME: Record<FactorId, string> = T.total.causeNames;
 const nb = (s: string) => s.replace('/', '/\u2060');
 
 /** С1: «За месяц прибыль с гектара пшеницы +5 944 ₽/га: цена +7% (+6 325 ₽/га), солярка +8,8% (−381 ₽/га)» */
-function headlineFor(a: FactorAnalysis, periodLong: string, cropGen: string): string {
+function headlineFor(a: FactorAnalysis, periodLong: string, cropGen: string, notPublished?: string): string {
   const causes = a.contributions
     .filter((c) => Math.round(c.effectPerHa) !== 0)
     .sort((x, y) => Math.abs(y.effectPerHa) - Math.abs(x.effectPerHa))
@@ -192,7 +193,11 @@ function headlineFor(a: FactorAnalysis, periodLong: string, cropGen: string): st
       ),
     )
     .join(T.total.causesJoin);
-  return T.total.headline(periodLong, cropGen, nb(formatRub(a.totalChangePerHa, { unit: '₽/га', sign: true })), causes);
+  // Цена за месяц не сдвинулась, потому что Росстат ещё не опубликовал месяц, — так и говорим
+  const lag = notPublished ? T.detail.priceNotPublished(notPublished) : '';
+  const rub = nb(formatRub(a.totalChangePerHa, { unit: '₽/га', sign: true }));
+  if (!causes) return T.total.headline(periodLong, cropGen, rub, lag);
+  return `${T.total.headline(periodLong, cropGen, rub, causes)}${lag ? `. ${lag}` : ''}`;
 }
 
 type BodyProps = {
@@ -246,6 +251,7 @@ function TodayBody({
   const diesel = contrib('diesel');
   const yld = contrib('yield');
   const worstRisk = risks.find((r) => r.status === 'worse') ?? risks[0];
+  const notPublished = model.period === 'month' && a ? model.priceNotPublished[a.crop] : undefined;
 
   return (
     <>
@@ -272,7 +278,7 @@ function TodayBody({
           </div>
           {a && crop && (
             <p className="mt-4 max-w-[46ch] text-[17px] leading-snug">
-              {headlineFor(a, periodLong, crop.nameGenitive)}
+              {headlineFor(a, periodLong, crop.nameGenitive, notPublished)}
             </p>
           )}
           <p className="mt-3 max-w-prose text-xs leading-relaxed text-muted">{T.total.seasonNote}</p>
@@ -300,8 +306,13 @@ function TodayBody({
                     label={texts.whatIf.breakeven.title}
                     value={cushion === null ? '—' : formatPct(cushion, { sign: false, fractionDigits: 0 })}
                     status={cushion !== null && cushion < 0 ? 'worse' : undefined}
-                    statusLabel={texts.whatIf.breakeven.belowAlready}
-                    hint={cushion !== null && cushion >= 0 ? texts.whatIf.breakeven.cushionPrice(formatPct(cushion, { sign: false, fractionDigits: 0 })) : undefined}
+                    hint={
+                      cushion === null
+                        ? undefined
+                        : cushion < 0
+                          ? texts.whatIf.breakeven.belowAlready
+                          : texts.whatIf.breakeven.cushionPrice(formatPct(cushion, { sign: false, fractionDigits: 0 }))
+                    }
                   />
                 );
               })()}
@@ -337,12 +348,12 @@ function TodayBody({
               <FactorCard
                 kind="price"
                 title={texts.factors.price.forCrop(crop.nameGenitive)}
-                status={factorStatus(price.changePct, price.effectPerHa)}
+                status={notPublished ? 'normal' : factorStatus(price.changePct, price.effectPerHa)}
                 effectRub={price.effectPerHa}
-                changePct={price.changePct}
-                changeCaption={periodCaption}
+                changePct={notPublished ? null : price.changePct}
+                changeCaption={notPublished ? undefined : periodCaption}
                 valueText={formatRub(price.to, { unit: '₽/т' })}
-                detail={cropTotal(price.effectTotal)}
+                detail={notPublished ? T.detail.priceNotPublished(notPublished) : cropTotal(price.effectTotal)}
                 link={marketLink({ crop: a.crop, region: profile.region, focus: 'price' })}
                 source={priceSrc}
               />
@@ -355,11 +366,16 @@ function TodayBody({
                 effectRub={diesel.effectPerHa}
                 changePct={diesel.changePct}
                 changeCaption={periodCaption}
-                valueText={`${formatNumber(diesel.to, 2)} ${C.units.rubPerL}`}
+                valueText={`${formatNumber(diesel.to, 2)}\u00a0${C.units.rubPerL} ${C.labels.dieselRussia}`}
                 detail={
-                  a.current.yieldCha > 0
-                    ? T.detail.dieselRubPerT(formatRub(diesel.effectPerHa / chaToT(a.current.yieldCha), { unit: '₽/т', sign: true }))
-                    : cropTotal(diesel.effectTotal)
+                  <>
+                    {a.current.yieldCha > 0
+                      ? T.detail.dieselRubPerT(formatRub(diesel.effectPerHa / chaToT(a.current.yieldCha), { unit: '₽/т', sign: true }))
+                      : cropTotal(diesel.effectTotal)}
+                    <span className="mt-1 block text-xs text-muted" title={C.labels.dieselRussiaHint}>
+                      {T.detail.dieselScope}
+                    </span>
+                  </>
                 }
                 link={marketLink({ region: profile.region, focus: 'diesel' })}
                 source={dieselSrc}

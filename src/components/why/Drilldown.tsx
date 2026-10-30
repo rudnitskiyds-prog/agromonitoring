@@ -15,7 +15,7 @@ import WithSeries from './WithSeries';
 import ChartFrame from '../ChartFrame';
 import LineChart, { type ChartSeries } from '../LineChart';
 import StatusTag from '../StatusTag';
-import { DRILL_STEPS, compareScopes, seasonDate, type DrillStep } from './model';
+import { DRILL_STEPS, compareScopes, type DrillStep } from './model';
 import SeasonWeather from './SeasonWeather';
 import { FACTOR_NAME, formatMoney, statusOfEffect } from './Waterfall';
 
@@ -28,8 +28,11 @@ const DX = W.drilldownExtra;
 
 const FACTOR_ICON: Record<FactorId, typeof Wheat> = { price: Wheat, yield: Sprout, diesel: Fuel, otherCosts: Sprout };
 
+/** Солярка есть только в среднем по России — сравнивать регионы не с чем, шаг «Регион» пропускаем. */
 function stepsFor(f: FactorId): DrillStep[] {
-  return f === 'otherCosts' ? ['indicator', 'factor'] : DRILL_STEPS;
+  if (f === 'otherCosts') return ['indicator', 'factor'];
+  if (f === 'diesel') return ['indicator', 'dynamics', 'factor'];
+  return DRILL_STEPS;
 }
 
 const stepQuestion: Record<DrillStep, string> = {
@@ -109,12 +112,15 @@ export interface DrilldownProps {
   analysis: FactorAnalysis;
   from: number;
   to: number;
+  /** Даты сравнения (выровненный месяц цены) */
+  fromDate: string;
+  toDate: string;
   onStep: (step: DrillStep) => void;
   /** true — регион и план из профиля хозяйства: можно говорить «вы»; иначе это разбор выбранного региона */
   own: boolean;
 }
 
-export default function Drilldown({ region, crop, factor, step, analysis, from, to, onStep, own }: DrilldownProps) {
+export default function Drilldown({ region, crop, factor, step, analysis, from, to, fromDate, toDate, onStep, own }: DrilldownProps) {
   const steps = stepsFor(factor);
   const current = steps.includes(step) ? step : steps[0];
   const idx = steps.indexOf(current);
@@ -201,6 +207,8 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
                   spec={spec}
                   from={from}
                   to={to}
+                  fromDate={fromDate}
+                  toDate={toDate}
                   own={own}
                 />
               )}
@@ -219,6 +227,8 @@ export default function Drilldown({ region, crop, factor, step, analysis, from, 
                   spec={spec}
                   from={from}
                   to={to}
+                  fromDate={fromDate}
+                  toDate={toDate}
                   own={own}
                 />
               )}
@@ -262,6 +272,9 @@ function IndicatorStep({ factor, analysis, spec }: { factor: FactorId; analysis:
         <p className="max-w-prose text-[15px] leading-relaxed text-ink/80">
           {factor === 'otherCosts' ? W.waterfall.otherCostsHint : `${FT[factor].short} ${FT[factor].effectHint}`}
         </p>
+        {factor === 'diesel' && (
+          <p className="mt-1.5 max-w-prose text-[13px] leading-snug text-muted">{texts.common.labels.dieselRussiaHint}</p>
+        )}
         <dl className="num mt-stack grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <div>
             <dt className="text-xs text-muted">
@@ -306,8 +319,12 @@ function SeriesStep({
   spec,
   from,
   to,
+  fromDate,
+  toDate,
   own,
 }: {
+  fromDate: string;
+  toDate: string;
   own: boolean;
   mode: 'dynamics' | 'region';
   factor: FactorId;
@@ -319,14 +336,12 @@ function SeriesStep({
   from: number;
   to: number;
 }) {
-  const toDate = seasonDate(to);
-  const fromDate = seasonDate(from);
   const used = mode === 'dynamics' ? all.slice(0, 1) : all;
   const usedScopes = mode === 'dynamics' ? scopes.slice(0, 1) : scopes;
 
   const series: ChartSeries[] = used.map((s, i) => ({
     id: String(usedScopes[i]),
-    label: mode === 'dynamics' && factor !== 'diesel' ? CROPS[crop].name : scopeShort(usedScopes[i]),
+    label: mode === 'dynamics' && factor !== 'diesel' ? CROPS[crop].name : scopeShort(s.region),
     colorVar: seriesColor(factor, crop, i === 0),
     dashed: usedScopes[i] === 'russia',
     points: windowed(s, toDate, spec.window),
@@ -345,13 +360,19 @@ function SeriesStep({
     else if (factor === 'yield' && ownPct < 0) verdict = diff < 0 ? RC.deeperThan(scopeName(region)) : RC.shallowerThan(scopeName(region));
   }
 
-  const lead = changes[0]?.pct != null ? RC.yieldDiff(REGIONS[region]?.name ?? region, formatPct(changes[0].pct)) : undefined;
+  // Ряд может быть по России (солярка): подписываем по региону самого ряда
+  const leadScope = used[0]?.region ?? region;
+  const lead = changes[0]?.pct != null ? RC.yieldDiff(scopeName(leadScope), formatPct(changes[0].pct)) : undefined;
   const q = mode === 'dynamics' ? D.dynamicsQuestion : RC.title;
 
   return (
     <div>
       <ChartFrame
-        question={mode === 'dynamics' ? `${FACTOR_NAME[factor]}, ${scopeName(region)}` : q}
+        question={
+          mode === 'dynamics'
+            ? `${FACTOR_NAME[factor]}, ${leadScope === 'russia' && factor === 'diesel' ? texts.common.labels.dieselRussia : scopeName(leadScope)}`
+            : q
+        }
         lead={mode === 'dynamics' ? lead : verdict ?? undefined}
         unit={spec.unit}
         source={used.map(sourceOf)}

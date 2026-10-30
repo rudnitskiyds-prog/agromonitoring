@@ -15,11 +15,13 @@ import { scrollBehavior } from '../components/why/motion';
 import Drilldown from '../components/why/Drilldown';
 import PeriodPicker from '../components/why/PeriodPicker';
 import Waterfall, { FACTOR_NAME, formatMoney, statusOfEffect, type WaterfallMode } from '../components/why/Waterfall';
-import { EXAMPLE_AREA_HA, availableYears, buildModel, planFor, readSelection, type DrillStep, type WhyModel } from '../components/why/model';
+import { EXAMPLE_AREA_HA, availableYears, buildModel, planFor, pointDates, readSelection, type DrillStep, type WhyModel } from '../components/why/model';
+
+type PointDates = ReturnType<typeof pointDates>;
 import { CROPS } from '../config/regions';
 import { texts } from '../content/texts';
 import { sourceOf } from '../lib/data';
-import { formatNumber, formatPct, formatRub } from '../lib/format';
+import { formatDate, formatNumber, formatPct, formatRub } from '../lib/format';
 import { useSeriesList } from '../hooks/useData';
 import { whyLink } from '../routes';
 import type { CropId, FactorId, MarketData, RegionId } from '../types';
@@ -27,6 +29,9 @@ import type { CropId, FactorId, MarketData, RegionId } from '../types';
 const W = texts.why;
 
 const WP = W.page;
+// TODO(copywriter): why.page.datesNote говорит «на 1 октября», а теперь даты выравниваются по месяцу цены
+const T_DATES_NOTE =
+  'Цена и солярка — на один и тот же месяц обоих сезонов: последний до октября, где есть цена Росстата (солярка в среднем по России). Урожайность — итог года по региону.';
 
 const FACTOR_FMT: Record<FactorId, (v: number) => string> = {
   price: (v) => formatRub(v, { unit: '₽/т' }),
@@ -57,7 +62,7 @@ function WhyContent({ onRetry }: { onRetry: () => void }) {
   ]);
   const data: MarketData | null =
     state.status === 'ready' ? { price: state.data[0], diesel: state.data[1], yield: state.data[2] } : null;
-  const result = data ? buildModel(sel, profile, data, W.periods.season) : null;
+  const result = data ? buildModel(sel, profile, data) : null;
   const model = result?.ok ? result.model : null;
   const years = data ? availableYears(data) : [];
   const { plan, fromProfile } = model ?? (result && !result.ok ? result : planFor(profile, sel.region, sel.crop));
@@ -119,7 +124,7 @@ function WhyContent({ onRetry }: { onRetry: () => void }) {
           <h2 id="why-periods" className="text-lg leading-tight sm:text-xl">
             {W.periods.title}
           </h2>
-          <p className="text-xs text-muted">{WP.datesNote}</p>
+          <p className="text-xs text-muted">{T_DATES_NOTE}</p>
         </div>
         <div className="mt-stack">
           <PeriodPicker
@@ -156,7 +161,7 @@ function WhyContent({ onRetry }: { onRetry: () => void }) {
       {state.status === 'error' && (
         <ErrorState className="mt-block-lg" message={texts.common.errors.load} onRetry={onRetry} />
       )}
-      {result && !result.ok && result.reason === 'noYears' && (
+      {result && !result.ok && (result.reason === 'noYears' || result.reason === 'noAligned') && (
         <EmptyState className="mt-block-lg" message={WP.noYears} />
       )}
 
@@ -197,7 +202,14 @@ function WhyContent({ onRetry }: { onRetry: () => void }) {
             </div>
           </ChartFrame>
 
-          <FactorTable model={model} mode={mode} selected={sel.factor} onSelect={selectFactor} />
+          <FactorTable
+            model={model}
+            mode={mode}
+            selected={sel.factor}
+            onSelect={selectFactor}
+            dates={{ from: pointDates(data, model.dates.from), to: pointDates(data, model.dates.to) }}
+            dieselRussia={data.diesel.region === 'russia'}
+          />
 
           <div className="mt-section">
             {sel.factor ? (
@@ -209,6 +221,8 @@ function WhyContent({ onRetry }: { onRetry: () => void }) {
                 analysis={model.analysis}
                 from={model.from}
                 to={model.to}
+                fromDate={model.dates.from}
+                toDate={model.dates.to}
                 onStep={(s) => go({ step: s }, false)}
                 own={model.fromProfile}
               />
@@ -300,13 +314,26 @@ function FactorTable({
   mode,
   selected,
   onSelect,
+  dates,
+  dieselRussia,
 }: {
   model: WhyModel;
   mode: WaterfallMode;
   selected: FactorId | null;
   onSelect: (f: FactorId) => void;
+  /** Фактические даты точек цены и солярки в каждом сезоне */
+  dates: { from: PointDates; to: PointDates };
+  dieselRussia: boolean;
 }) {
   const a = model.analysis;
+  // Дата точки под значением: цена — месяц Росстата, солярка — неделя
+  const dateOf = (f: FactorId, side: 'from' | 'to'): string | null => {
+    const d = f === 'price' ? dates[side].price : f === 'diesel' ? dates[side].diesel : null;
+    if (!d) return null;
+    return f === 'price' ? formatDate(d, 'month') : formatDate(d, 'long');
+  };
+  const sub = (f: FactorId) =>
+    f === 'diesel' && dieselRussia ? <span className="block text-[12px] font-normal text-muted">{texts.common.labels.dieselRussia}</span> : null;
   return (
     <section aria-labelledby="why-table" className="mt-section">
       <h2 id="why-table" className="text-lg leading-tight sm:text-xl">
@@ -334,9 +361,16 @@ function FactorTable({
                     on ? 'bg-accent-soft/40' : ''
                   }`}
                 >
-                  <span className={`pl-2 font-medium ${on ? 'text-accent' : 'text-ink'}`}>{FACTOR_NAME[c.factor]}</span>
-                  <span className="text-right text-ink/80">{FACTOR_FMT[c.factor](c.from)}</span>
-                  <span className="text-right text-ink/80">{FACTOR_FMT[c.factor](c.to)}</span>
+                  <span className={`pl-2 font-medium ${on ? 'text-accent' : 'text-ink'}`}>
+                    {FACTOR_NAME[c.factor]}
+                    {sub(c.factor)}
+                  </span>
+                  {(['from', 'to'] as const).map((side) => (
+                    <span key={side} className="text-right text-ink/80">
+                      {FACTOR_FMT[c.factor](side === 'from' ? c.from : c.to)}
+                      {dateOf(c.factor, side) && <span className="block text-[11.5px] text-muted">{dateOf(c.factor, side)}</span>}
+                    </span>
+                  ))}
                   <span className="text-right">{c.changePct === null ? '—' : formatPct(c.changePct)}</span>
                   <span className="flex items-center justify-end gap-2 pr-2">
                     <span className="font-semibold">{formatMoney(eff, mode, true)}</span>
@@ -362,13 +396,21 @@ function FactorTable({
                 className={`w-full rounded-card border p-card-sm text-left ${on ? 'border-accent bg-accent-soft/40' : 'border-line bg-surface'}`}
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{FACTOR_NAME[c.factor]}</span>
+                  <span className="font-medium">
+                    {FACTOR_NAME[c.factor]}
+                    {sub(c.factor)}
+                  </span>
                   <StatusTag status={statusOfEffect(c.effectPerHa)} size="sm" />
                 </span>
                 <span className="mt-1 block text-[13px] text-ink/75">
                   {FACTOR_FMT[c.factor](c.from)} → {FACTOR_FMT[c.factor](c.to)}
                   {c.changePct !== null && <> ({formatPct(c.changePct)})</>}
                 </span>
+                {dateOf(c.factor, 'from') && (
+                  <span className="mt-0.5 block text-[11.5px] text-muted">
+                    {dateOf(c.factor, 'from')} → {dateOf(c.factor, 'to')}
+                  </span>
+                )}
                 <span className="mt-1 block text-[15px] font-semibold">{formatMoney(eff, mode, true)}</span>
               </button>
             </li>

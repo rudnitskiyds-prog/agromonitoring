@@ -53,7 +53,9 @@ export function useSourceRows(manifest: DataManifest | null): SourceRow[] {
     const meta = M.rows.find((r) => r.id === id);
     const fs = byIndicator.get(id) ?? [];
     const updated = fs.length ? fs.map((f) => f.updated_at).sort().pop()! : null;
-    const regions = [...new Set(fs.map((f) => f.region))].map(scopeName);
+    // Порядок: регионы как в конфиге, «Россия в среднем» — последней
+    const order = (r: GeoScope) => (r === 'russia' ? 1e3 : Object.keys(REGIONS).indexOf(r));
+    const regions = [...new Set(fs.map((f) => f.region))].sort((x, y) => order(x) - order(y)).map(scopeName);
     const freq = fs[0]?.frequency as Frequency | undefined;
     return {
       id,

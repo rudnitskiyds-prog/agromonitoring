@@ -249,6 +249,8 @@ export const texts = {
         `Хозяйство ${area} га, ${region}: рост солярки за ${period} обошёлся в ${rub}`,
       headlineGain: (area: string, region: string, rub: string, period: string) =>
         `Хозяйство ${area} га, ${region}: солярка за ${period} подешевела, это ${rub} в плюс`,
+      headlineFlat: (area: string, region: string, period: string) =>
+        `Хозяйство ${area} га, ${region}: за ${period} цена солярки почти не изменилась`,
       caption: 'Пример на демо-хозяйстве. Цены — данные Росстата, затраты — допущения.',
       // «Расчёт для демо-хозяйства: 1 200 га на Кубани, пшеница 800 га и подсолнечник 400 га, по демо-ценам»
       demoCaption: (area: string, region: string, parts: string) =>
@@ -442,7 +444,7 @@ export const texts = {
     adviceEmpty: 'Пока всё в норме, срочных действий нет.',
     adviceFrom: 'Вывод по самому заметному изменению',
     detail: {
-      dieselTitle: 'Как дорожала солярка по неделям?',
+      dieselTitle: 'Как менялась цена солярки по неделям?',
       dieselScope: 'Цена солярки — в среднем по России.',
       // month — именительный падеж, строчными: «октябрь»
       priceNotPublished: (month: string) =>
@@ -482,13 +484,19 @@ export const texts = {
       vsNorm: (month: string) => `к обычной цене для ${month}`,
       // Строки листа вердикта
       priceNow: (month: string) => `Цена сейчас, ${month}`,
+      // month — «июль 2026», именительный падеж
+      priceFor: (month: string) => `Цена за ${month}`,
       normFor: (month: string) => `Обычно для ${month}`,
     },
     regionLabel: 'Регион',
     cropInProfile: 'ваша',
     seasonStripLead: 'Нажмите на этап: на графике сезонности подсветятся его месяцы.',
     dieselImpact: {
-      title: 'Во сколько мне обошёлся рост солярки?',
+      // title — по умолчанию и когда цена почти не изменилась; titleUp — солярка за месяц подорожала;
+      // titleDown — подешевела
+      title: 'Во сколько мне обходится солярка?',
+      titleUp: 'Во сколько мне обошёлся рост солярки?',
+      titleDown: 'Сколько я сэкономил на солярке?',
       farmTotal: 'На всё хозяйство',
       perHa: 'С гектара',
       perT: 'На тонну урожая',
@@ -500,7 +508,9 @@ export const texts = {
     },
     priceChart: {
       title: 'Как менялась цена производителей?',
-      lead: 'Цена по месяцам за два года.',
+      lead: 'Как менялась цена, по месяцам.',
+      // from, to — «январь 2025», «сентябрь 2026»
+      period: (from: string, to: string) => `Цена по месяцам: ${from} – ${to}`,
       yAxis: '₽/т',
       current: 'Сейчас',
       tooltipValue: (month: string, rub: string) => `${month}: ${rub}`,

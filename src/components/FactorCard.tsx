@@ -95,9 +95,11 @@ export default function FactorCard(props: FactorCardProps) {
           {changeCaption && <span>{changeCaption}</span>}
           {valueText && (
             <>
-              <span aria-hidden className="text-line-strong">
-                /
-              </span>
+              {(changePct != null || changeCaption) && (
+                <span aria-hidden className="text-line-strong">
+                  /
+                </span>
+              )}
               <span>{valueText}</span>
             </>
           )}
