@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-28T08:15:26Z",
+ "generated_at": "2026-10-30T06:49:12Z",
  "files": [
   {
    "indicator": "active_temp_sum",
@@ -23,22 +23,12 @@
   },
   {
    "indicator": "diesel_price",
-   "region": "krasnodar",
+   "region": "russia",
    "crop": null,
    "frequency": "week",
-   "file": "diesel_price_krasnodar_week.json",
-   "demo": true,
-   "source": "Росстат, мониторинг цен на нефтепродукты (демо-ряд)",
-   "updated_at": "2026-10-26"
-  },
-  {
-   "indicator": "diesel_price",
-   "region": "saratov",
-   "crop": null,
-   "frequency": "week",
-   "file": "diesel_price_saratov_week.json",
-   "demo": true,
-   "source": "Росстат, мониторинг цен на нефтепродукты (демо-ряд)",
+   "file": "diesel_price_russia_week.json",
+   "demo": false,
+   "source": "Росстат: Еженедельные средние потребительские цены на отдельные товары и услуги по Российской Федерации",
    "updated_at": "2026-10-26"
   },
   {
@@ -177,9 +167,9 @@
    "crop": "barley",
    "frequency": "month",
    "file": "producer_price_krasnodar_barley_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "producer_price",
@@ -187,9 +177,9 @@
    "crop": "corn",
    "frequency": "month",
    "file": "producer_price_krasnodar_corn_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "producer_price",
@@ -197,9 +187,9 @@
    "crop": "sunflower",
    "frequency": "month",
    "file": "producer_price_krasnodar_sunflower_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "producer_price",
@@ -207,9 +197,49 @@
    "crop": "wheat",
    "frequency": "month",
    "file": "producer_price_krasnodar_wheat_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "russia",
+   "crop": "barley",
+   "frequency": "month",
+   "file": "producer_price_russia_barley_month.json",
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "russia",
+   "crop": "corn",
+   "frequency": "month",
+   "file": "producer_price_russia_corn_month.json",
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "russia",
+   "crop": "sunflower",
+   "frequency": "month",
+   "file": "producer_price_russia_sunflower_month.json",
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
+  },
+  {
+   "indicator": "producer_price",
+   "region": "russia",
+   "crop": "wheat",
+   "frequency": "month",
+   "file": "producer_price_russia_wheat_month.json",
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "producer_price",
@@ -217,9 +247,9 @@
    "crop": "barley",
    "frequency": "month",
    "file": "producer_price_saratov_barley_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "producer_price",
@@ -227,9 +257,9 @@
    "crop": "corn",
    "frequency": "month",
    "file": "producer_price_saratov_corn_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "producer_price",
@@ -237,9 +267,9 @@
    "crop": "sunflower",
    "frequency": "month",
    "file": "producer_price_saratov_sunflower_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "producer_price",
@@ -247,9 +277,9 @@
    "crop": "wheat",
    "frequency": "month",
    "file": "producer_price_saratov_wheat_month.json",
-   "demo": true,
-   "source": "Росстат / ЕМИСС (демо-ряд)",
-   "updated_at": "2026-10-01"
+   "demo": false,
+   "source": "Росстат: Средние цены производителей сельскохозяйственной продукции, реализованной сельскохозяйственными организациями (на конец периода)",
+   "updated_at": "2026-10-23"
   },
   {
    "indicator": "sown_area",

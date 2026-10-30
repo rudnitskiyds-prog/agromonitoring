@@ -326,3 +326,40 @@ describe('breakevenCushion', () => {
     expect(zp.yieldPct).toBeNull();
   });
 });
+
+describe('ряды Росстата с пропусками и задержкой публикации', () => {
+  const price = ser([
+    ['2026-07-01', 15000],
+    ['2026-08-01', null],
+    ['2026-09-01', 14700],
+  ]);
+  const diesel = ser(
+    [
+      ['2026-09-21', 70],
+      ['2026-09-28', 70.5],
+      ['2026-10-19', 72],
+      ['2026-10-26', 72.8],
+    ],
+    { indicator: 'diesel_price', region: 'russia', crop: null, frequency: 'week' },
+  );
+  const data = { price, diesel, yield: ser([], { indicator: 'yield', frequency: 'year' }) };
+  it('valueAt — последняя непустая при дате позже ряда', () => {
+    expect(valueAt(price, '2026-10-26')).toEqual({ date: '2026-09-01', value: 14700 });
+    expect(valueAt(price, '2026-08-20')).toEqual({ date: '2026-07-01', value: 15000 });
+  });
+  it('monthAgo: 2026-10-26 → 2026-09-26, цена в обоих периодах — за сентябрь, вклад цены 0', () => {
+    const date = '2026-10-26';
+    const base = periodStateAt(plan, data, monthAgo(date));
+    const cur = periodStateAt(plan, data, date);
+    expect(monthAgo(date)).toBe('2026-09-26');
+    expect(base.pricePerT).toBe(14700);
+    expect(cur.pricePerT).toBe(14700);
+    expect(base.dieselPerL).toBe(70);
+    expect(cur.dieselPerL).toBe(72.8);
+    const fa = factorAnalysis(base, cur, plan.areaHa, 'wheat');
+    expect(fa.contributions[0].effectPerHa).toBe(0);
+    expect(fa.contributions[0].changePct).toBe(0);
+    expect(fa.contributions[2].effectPerHa).toBeCloseTo(-2.8 * 60, 9);
+    expect(Math.abs(fa.residualPerHa)).toBeLessThan(1e-6);
+  });
+});

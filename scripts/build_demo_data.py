@@ -244,7 +244,9 @@ def build_yield_area_harvest():
 
 
 def main():
-    all_series = build_prices() + build_diesel() + build_yield_area_harvest()
+    # Дизель по регионам больше не генерируется: реальный ряд по РФ (diesel_price_russia_week) собирает scripts/collect.py.
+    # Цены производителей тоже реальные (collect.py); build_prices() пишет только то, чего нет в реальном виде.
+    all_series = build_prices() + build_yield_area_harvest()
     for d in all_series:
         errs = validate_series(d)
         if errs:

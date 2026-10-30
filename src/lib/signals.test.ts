@@ -3,6 +3,8 @@ import type { DailyWeather, PeriodState, SignalContext } from '../types';
 import { ROUTES } from '../routes';
 import { DEMO_FARM } from '../store/farm';
 import { factorAnalysis } from './finance';
+import { buildRegionalProfile, seasonalDeviation } from './seasonality';
+import type { DataSeries } from '../types';
 import { buildSignals, cropShortName, CROP_SHORT, detectWeatherRisks, formatDayRange, pickAdvice, RISK_SEASON_MONTHS, WEATHER_WORSE_PRIORITY } from './signals';
 
 const p = (s: string) => s.replace(/ /g, ' ');
@@ -177,5 +179,32 @@ describe('cropShortName', () => {
   it('короткие имена', () => {
     expect(cropShortName('corn')).toBe('Кукуруза');
     expect(CROP_SHORT.wheat).toBe('Пшеница');
+  });
+});
+
+describe('сигнал сезонности с региональным профилем (форма — Россия)', () => {
+  const IDX = [1.04, 1.05, 1.06, 1.05, 1.02, 0.98, 0.92, 0.9, 0.95, 1.0, 1.01, 1.02];
+  const mk = (region: string, from: number, to: number, level: (y: number) => number, lastMonth = 12): DataSeries => {
+    const series = [];
+    for (let y = from; y <= to; y++)
+      for (let m = 1; m <= (y === to ? lastMonth : 12); m++)
+        series.push({ date: `${y}-${String(m).padStart(2, '0')}-01`, value: level(y) * IDX[m - 1] });
+    return {
+      indicator: 'producer_price', region, crop: 'sunflower', unit: 'руб./т', source: 'Росстат', source_url: '',
+      updated_at: '2026-10-15', frequency: 'month', demo: false, series,
+    };
+  };
+  it('отклонение по региональному ряду даёт сигнал для своей культуры', () => {
+    const ru = mk('russia', 2021, 2026, () => 30000, 9);
+    const reg = mk('krasnodar', 2025, 2026, (y) => (y === 2026 ? 44000 : 36000), 9);
+    const prof = buildRegionalProfile(ru, reg);
+    const dev = seasonalDeviation(reg, prof, { date: '2026-10-26' });
+    expect(dev.month).toBe(9);
+    expect(dev.status).toBe('better');
+    const s = buildSignals(ctx({ seasonality: [dev] }));
+    const sig = s.find((x) => x.id === 'seasonality-sunflower')!;
+    expect(sig.status).toBe('better');
+    expect(p(sig.text)).toMatch(/^Подсолнечник: цена на \d+(,\d)?% выше обычной для сентября — хорошее окно для продажи/);
+    expect(sig.effectRub).toBeCloseTo((dev.currentPrice - dev.normPrice) * 2.6, 6);
   });
 });

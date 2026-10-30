@@ -22,6 +22,11 @@ for p in sorted(DATA_DIR.glob("*.json")):
     errs = validate_series(d)
     if not errs and file_name(d["indicator"], d["region"], d["crop"], d["frequency"]) != p.name:
         errs.append("имя файла не соответствует содержимому")
+    # реальные ряды не должны быть помечены как демо, демо — должны быть явно названы демо в source
+    if not errs and d["demo"] is False and "демо" in d["source"].lower():
+        errs.append("demo: false, но в source есть пометка «демо»")
+    if not errs and d["demo"] is True and "демо" not in d["source"].lower():
+        errs.append("demo: true, но в source нет пометки «демо»")
     if errs:
         bad += 1
         print(p.name, errs)

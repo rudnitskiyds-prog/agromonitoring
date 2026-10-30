@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DataSeries } from '../types';
-import { buildSeasonalProfile, seasonalDeviation, sellerStatus } from './seasonality';
+import { buildRegionalProfile, buildSeasonalProfile, rescaleProfile, seasonalDeviation, sellerStatus } from './seasonality';
 
 // Известный профиль (среднее = 1): дешевле в уборку (июль–август), дороже весной.
 const KNOWN = [1.04, 1.05, 1.06, 1.05, 1.02, 0.98, 0.92, 0.9, 0.95, 1.0, 1.01, 1.02];
@@ -117,5 +117,88 @@ describe('seasonalDeviation', () => {
   });
   it('пустой ряд → ошибка', () => {
     expect(() => seasonalDeviation({ ...s, series: [] }, p)).toThrow();
+  });
+});
+
+/** Региональный ряд: 2025-01 … 2026-09, уровень 20 000 (×1,05 в 2026), та же сезонность, пропуски null. */
+function regional(nulls: string[] = []): DataSeries {
+  const series = [];
+  for (let y = 2025; y <= 2026; y++)
+    for (let m = 1; m <= 12; m++) {
+      if (y === 2026 && m > 9) break;
+      const date = `${y}-${String(m).padStart(2, '0')}-01`;
+      series.push({ date, value: nulls.includes(date) ? null : 20000 * (y === 2026 ? 1.05 : 1) * IDX[m - 1] });
+    }
+  return {
+    indicator: 'producer_price',
+    region: 'saratov',
+    crop: 'wheat',
+    unit: 'руб./т',
+    source: 'Росстат, ЕМИСС',
+    source_url: 'https://fedstat.ru',
+    updated_at: '2026-10-15',
+    frequency: 'month',
+    demo: false,
+    series,
+  };
+}
+const russia = (): DataSeries => ({ ...synthetic(), region: 'russia' });
+const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+describe('rescaleProfile / buildRegionalProfile', () => {
+  const ru = buildSeasonalProfile(russia());
+  it('индексы — российские, уровень — региональный', () => {
+    const reg = regional();
+    const p = rescaleProfile(ru, reg);
+    const last12 = reg.series.slice(-12).map((x) => x.value as number);
+    const level = mean(last12);
+    expect(p.levelMonths).toBe(12);
+    expect(p.levelPrice).toBeCloseTo(level, 6);
+    p.months.forEach((m, i) => {
+      expect(m.index).toBe(ru.months[i].index);
+      expect(m.normPrice).toBeCloseTo(ru.months[i].index * level, 6);
+      expect(m.min).toBeCloseTo((ru.months[i].min / mean(ru.months.map((x) => x.normPrice))) * level, 6);
+      expect(m.years).toBe(5);
+    });
+    expect(p.region).toBe('saratov');
+    expect(p.crop).toBe('wheat');
+    expect(p.years).toEqual(ru.years);
+    expect(p.source.source).toBe('Росстат, ЕМИСС');
+    expect(p.source.demo).toBe(true); // форма из демо-ряда (синтетика) → помечаем демо
+    expect(p.shape).toEqual({ region: 'russia', source: ru.source, years: ru.years });
+  });
+  it('null пропускаются: уровень — по последним 12 месяцам с данными', () => {
+    const nulls = ['2026-09-01', '2026-03-01'];
+    const reg = regional(nulls);
+    const p = rescaleProfile(ru, reg);
+    const vals = reg.series.filter((x) => x.value !== null).map((x) => x.value as number).slice(-12);
+    expect(p.levelMonths).toBe(12);
+    expect(p.levelPrice).toBeCloseTo(mean(vals), 6);
+  });
+  it('меньше 12 месяцев — по тем, что есть', () => {
+    const reg = regional();
+    reg.series = reg.series.slice(-7);
+    const p = rescaleProfile(ru, reg);
+    expect(p.levelMonths).toBe(7);
+    expect(p.levelPrice).toBeCloseTo(mean(reg.series.map((x) => x.value as number)), 6);
+  });
+  it('пустой региональный ряд — уровень 0', () => {
+    const p = rescaleProfile(ru, { ...regional(), series: [] });
+    expect(p.levelMonths).toBe(0);
+    expect(p.months.every((m) => m.normPrice === 0)).toBe(true);
+  });
+  it('buildRegionalProfile = rescaleProfile(buildSeasonalProfile(...))', () => {
+    expect(buildRegionalProfile(russia(), regional())).toEqual(rescaleProfile(ru, regional()));
+  });
+  it('seasonalDeviation по региональному ряду работает как раньше', () => {
+    const reg = regional(['2026-09-01']);
+    const p = buildRegionalProfile(russia(), reg);
+    const d = seasonalDeviation(reg, p, { date: '2026-10-26' });
+    expect(d.date).toBe('2026-08-01'); // сентябрь null → последняя непустая
+    expect(d.crop).toBe('wheat');
+    expect(d.normPrice).toBeCloseTo(p.months[7].normPrice, 6);
+    // ряд и профиль одной формы: отклонение = уровень 2026 / средний уровень последних 12 мес. − 1
+    expect(d.deviationPct).toBeCloseTo(((20000 * 1.05) / p.levelPrice - 1) * 100, 6);
+    expect(d.status).toBe(sellerStatus(d.deviationPct));
   });
 });

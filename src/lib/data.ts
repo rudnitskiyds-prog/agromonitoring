@@ -43,7 +43,7 @@ async function fetchJson(file: string, what: string): Promise<unknown> {
 const seriesCache = new Map<string, Promise<DataSeries>>();
 let manifestCache: Promise<DataManifest> | null = null;
 
-export const loadSeries: LoadSeries = (key: SeriesKey) => {
+const loadOwn = (key: SeriesKey): Promise<DataSeries> => {
   const file = seriesFileName(key);
   let p = seriesCache.get(file);
   if (!p) {
@@ -56,6 +56,30 @@ export const loadSeries: LoadSeries = (key: SeriesKey) => {
     p.catch(() => seriesCache.delete(file)); // ошибку не кэшируем — можно повторить
   }
   return p;
+};
+
+/**
+ * Загружает ряд. Фолбэк: цена дизтоплива публикуется Росстатом только по РФ, поэтому если для региона
+ * diesel_price нет в index.json (или файла нет), возвращается diesel_price_russia_week как есть, с region: 'russia' —
+ * интерфейс по этому полю показывает, что это среднее по России.
+ */
+export const loadSeries: LoadSeries = async (key: SeriesKey) => {
+  if (key.indicator !== 'diesel_price' || key.region === 'russia') return loadOwn(key);
+  const russia: SeriesKey = { ...key, region: 'russia', crop: null };
+  let inIndex: boolean | null = null; // null — манифест недоступен, пробуем по месту
+  try {
+    const file = seriesFileName(key);
+    inIndex = (await loadManifest()).files.some((f) => f.file === file);
+  } catch {
+    inIndex = null;
+  }
+  if (inIndex === false) return loadOwn(russia);
+  try {
+    return await loadOwn(key);
+  } catch (e) {
+    if (inIndex === null) return loadOwn(russia);
+    throw e;
+  }
 };
 
 export const loadManifest: LoadManifest = () => {

@@ -1,5 +1,5 @@
 // Сезонность цен. Владелец — finance-modeler.
-import type { BuildSeasonalProfile, DataSeries, SeasonalDeviationFn, SeasonalMonth, SignalStatus } from '../types';
+import type { BuildSeasonalProfile, DataSeries, GeoScope, SeasonalDeviationFn, SeasonalMonth, SeasonalProfile, SignalStatus, SourceRef } from '../types';
 import { validPoints } from './series';
 
 export const DEFAULT_PROFILE_YEARS = 5;
@@ -114,3 +114,66 @@ export const seasonalDeviation: SeasonalDeviationFn = (series, profile, opts = {
     status: sellerStatus(deviationPct, opts.thresholdPct ?? DEFAULT_DEVIATION_THRESHOLD_PCT),
   };
 };
+
+// ─── Региональный профиль: форма — по России, уровень — по региону ───────────
+
+/** Профиль с пометкой, откуда взята форма сезонности и сколько месяцев дали уровень. */
+export interface RegionalSeasonalProfile extends SeasonalProfile {
+  /** Откуда индексы месяцев (форма): обычно Россия */
+  shape: { region: GeoScope; source: SourceRef; years: number[] };
+  /** Сколько последних месяцев с данными регионального ряда вошло в уровень (≤ 12) */
+  levelMonths: number;
+  /** Средняя цена региона за эти месяцы, ₽/т */
+  levelPrice: number;
+}
+
+/**
+ * Перенос сезонного профиля на уровень другого ряда.
+ * Индексы месяцев (форма) — из profile; normPrice, min, max = индекс × средняя цена levelSeries
+ * за последние 12 месяцев с данными (пропуски null не считаются; если месяцев меньше 12 — по тем,
+ * что есть, их число — в levelMonths).
+ * В результате: region и crop — регионального ряда, source — источник регионального ряда
+ * (demo, если демо хотя бы один из рядов), years — годы исходного профиля; исходник формы — в shape.
+ * Если в levelSeries нет данных — уровень 0 и levelMonths = 0 (норму показывать нельзя).
+ *
+ * Для методики: «Региональные ряды цен Росстата короткие (с 2025 года), поэтому форму сезонности
+ * берём по России: для каждого месяца — во сколько раз цена обычно выше или ниже среднегодовой
+ * (среднее за 5 полных лет). Уровень — региональный: норма месяца = этот коэффициент × средняя цена
+ * в регионе за последние 12 месяцев, по которым есть данные.»
+ */
+export function rescaleProfile(profile: SeasonalProfile, levelSeries: DataSeries): RegionalSeasonalProfile {
+  const level = [...monthlyAverages(levelSeries).values()].slice(-12);
+  const levelPrice = level.length > 0 ? level.reduce((a, b) => a + b, 0) / level.length : 0;
+  // Уровень исходного профиля = средняя normPrice по 12 месяцам (средний индекс = 1 по построению).
+  const srcLevel = profile.months.reduce((a, m) => a + m.normPrice, 0) / (profile.months.length || 1);
+  const scale = (v: number, index: number) => (srcLevel > 0 ? (v / srcLevel) * levelPrice : index * levelPrice);
+  return {
+    crop: levelSeries.crop ?? profile.crop,
+    region: levelSeries.region,
+    years: profile.years,
+    months: profile.months.map((m) => ({
+      ...m,
+      normPrice: m.index * levelPrice,
+      min: scale(m.min, m.index),
+      max: scale(m.max, m.index),
+    })),
+    source: {
+      source: levelSeries.source,
+      source_url: levelSeries.source_url,
+      updated_at: levelSeries.updated_at,
+      demo: levelSeries.demo || profile.source.demo,
+    },
+    shape: { region: profile.region, source: profile.source, years: profile.years },
+    levelMonths: level.length,
+    levelPrice,
+  };
+}
+
+/** Один вызов для страниц: форма — по russiaSeries за `years` полных лет, уровень — по regionSeries. */
+export function buildRegionalProfile(
+  russiaSeries: DataSeries,
+  regionSeries: DataSeries,
+  years = DEFAULT_PROFILE_YEARS,
+): RegionalSeasonalProfile {
+  return rescaleProfile(buildSeasonalProfile(russiaSeries, years), regionSeries);
+}
